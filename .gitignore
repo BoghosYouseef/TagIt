@@ -1,0 +1,18 @@
+# Build directories
+build/
+*.class
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Gradle
+.gradle/
+
+# OS specific
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log

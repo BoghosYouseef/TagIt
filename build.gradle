@@ -1,0 +1,43 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.7'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
+}
+
+apply plugin: 'io.spring.dependency-management'
+
+group = 'com.tagit'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    sourceCompatibility = '21'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.openjfx:javafx-controls:21.0.2'
+    implementation 'org.openjfx:javafx-fxml:21.0.2'
+    implementation 'org.openjfx:javafx-graphics:21.0.2'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+javafx {
+    version = "21.0.2"
+    modules = [ 'javafx.controls', 'javafx.fxml', 'javafx.graphics' ]
+}
+
+sourceSets {
+    main {
+        resources {
+            // srcDirs = ['src/main/resources', 'configuration']
+        }
+    }
+}
