@@ -1,0 +1,39 @@
+package repository.implementation;
+
+public class FileRepositoryImplementation implements FileRepository {
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    @Override
+    @Transactional
+    public void save(FileEntity file) {
+        entityManager.persist(file);
+    }
+
+    @Override
+    public List<FileEntity> findByName(String name) {
+        String query = "SELECT f FROM FileEntity f WHERE f.name = :name";
+        return entityManager.createQuery(query, FileEntity.class)
+                            .setParameter("name", name)
+                            .getResultList();
+    }
+
+    @Override
+    public List<FileEntity> findByType(String type) {
+        String query = "SELECT f FROM FileEntity f WHERE f.type = :type";
+        return entityManager.createQuery(query, FileEntity.class)
+                            .setParameter("type", type)
+                            .getResultList();
+    }
+
+    @Override
+    public FileEntity saveFileRecord(String name, String size, String absolutePath, String type) {
+        FileEntity file = new FileEntity();
+        file.setName(name);
+        file.setSize(size);
+        file.setAbsolutePath(absolutePath);
+        file.setType(type);
+        entityManager.persist(file);
+        return file;
+    }
+}

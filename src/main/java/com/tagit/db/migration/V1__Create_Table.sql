@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS files (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    size INTEGER,
+    absolutePath TEXT NOT NULL,
+    type TEXT NOT NULL)

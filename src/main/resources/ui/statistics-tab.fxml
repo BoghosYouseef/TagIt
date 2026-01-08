@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.chart.PieChart?>
+<?import javafx.scene.chart.BarChart?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.tagit.ui.StatisticsTabController">
+    <top>
+        <!-- <VBox style="-fx-padding: 16; -fx-border-color: #8b5a8b33; -fx-border-width: 0 0 1 0; -fx-background-color: -bg-color;"> -->
+        <VBox >
+            <Label text="Statistics" style="-fx-font-size: 18; -fx-font-weight: bold; -fx-text-fill: white;" />
+            <Label text="View analytics and file organization metrics" style="-fx-font-size: 12; -fx-text-fill: #a0a0a0; -fx-padding: 4 0 0 0;" />
+        </VBox>
+    </top>
+    <center>
+        <HBox spacing="24" style="-fx-padding: 24; -fx-background-color: -bg-color; -fx-alignment: CENTER;">
+            <PieChart fx:id="fileTypeChart" title="File Types" style="-fx-text-fill: white;" HBox.hgrow="ALWAYS" />
+            <BarChart fx:id="tagFrequencyChart" title="Tag Frequency" style="-fx-text-fill: white;" HBox.hgrow="ALWAYS">
+                <xAxis>
+                    <CategoryAxis side="BOTTOM" />
+                </xAxis>
+                <yAxis>
+                    <NumberAxis side="LEFT" />
+                </yAxis>
+            </BarChart>
+        </HBox>
+    </center>
+</BorderPane>
