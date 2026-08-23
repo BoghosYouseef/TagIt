@@ -470,7 +470,7 @@ public class FilesTabController {
     }
 
     private Button createClickToFilterByTagLabel(FileModel fileModel, TagModel tag){
-        // Label tagLabel = new Label();
+        
         Button tagLabelContainerButton = createTagButton(tag);
         tagLabelContainerButton.setId(tag.getId().toString());
         
