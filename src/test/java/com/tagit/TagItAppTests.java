@@ -1,7 +1,5 @@
 package com.tagit;
 
-import java.util.logging.Logger;
-
 import org.slf4j.LoggerFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

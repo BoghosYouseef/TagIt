@@ -5,6 +5,7 @@ import javafx.scene.control.Button;
 import javafx.scene.layout.TilePane;
 
 public class CollectionsTabController {
+    
     @FXML
     private TilePane collectionsTile;
 

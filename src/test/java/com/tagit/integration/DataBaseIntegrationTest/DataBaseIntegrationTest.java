@@ -34,7 +34,7 @@ public class DataBaseIntegrationTest {
     }
 
     @Test
-    public void testConfig() {
+    public void testConfigisNotNull() {
         assertNotNull(config);
     }
 
@@ -44,6 +44,8 @@ public class DataBaseIntegrationTest {
         String dbName = config.getDatabaseName();
         String dbPath = config.getDatabasePath();
         String dbInitScriptPath = config.getDatabaseInitScriptPath();
+        String jdbcUrl = config.getJDBCUrl();
+        
         logger.info("database name: " + dbName);
         logger.info("database path: " + dbPath);
         if (dbInitScriptPath == null) {
@@ -56,9 +58,9 @@ public class DataBaseIntegrationTest {
 
         try{
             Connection jdbcConnection = DriverManager.getConnection(
-                "jdbc:sqlite:" + dbPath + "/" + dbName + ".db",
-                "root",
-                "123456");
+                jdbcUrl,
+                "testUsername",
+                "testPassword");
 
             DatabaseMetaData md = jdbcConnection.getMetaData();
             ResultSet rs = md.getTables(null, null, "%", null);

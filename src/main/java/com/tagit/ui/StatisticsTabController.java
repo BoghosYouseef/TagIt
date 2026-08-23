@@ -1,9 +1,13 @@
 package com.tagit.ui;
 
+import org.springframework.stereotype.Controller;
+
 import javafx.fxml.FXML;
 import javafx.scene.chart.PieChart;
 import javafx.scene.chart.BarChart;
 
+
+@Controller
 public class StatisticsTabController {
     @FXML
     private PieChart fileTypeChart;

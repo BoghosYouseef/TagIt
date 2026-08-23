@@ -45,6 +45,10 @@ public class DatabaseProperties {
     public void setDatabaseInitScriptPath(String databaseInitScriptPath) {
         this.databaseInitScriptPath = databaseInitScriptPath;
     }
+
+    public String getJDBCUrl() {
+        return "jdbc:sqlite:" + databasePath + "/" + databaseName + ".db";
+    }
     
     @Bean
     public DatabaseConfig databaseConfig() {

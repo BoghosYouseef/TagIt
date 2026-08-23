@@ -6,6 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import com.tagit.db.DatabaseProperties;
 
+
 @ConfigurationProperties(prefix = "app")
 public class AppConfig {
     private static final Properties properties = new Properties();
@@ -94,5 +95,8 @@ public class AppConfig {
 
     public String getDatabaseInitScriptPath() {
         return databaseProperties.getDatabaseInitScriptPath();
+    }
+    public String getJDBCUrl() {
+        return databaseProperties.getJDBCUrl();
     }
 }

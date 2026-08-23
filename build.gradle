@@ -6,6 +6,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.7'
     id 'org.openjfx.javafxplugin' version '0.1.0'
+    id 'org.flywaydb.flyway' version '13.1.0'
 }
 
 apply plugin: 'io.spring.dependency-management'

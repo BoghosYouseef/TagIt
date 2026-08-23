@@ -14,8 +14,17 @@ import java.util.List;
 
 import org.springframework.context.ApplicationContext;
 
+import com.tagit.TagItApp;
+
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class TabFactory {
+    
+    private static final Logger logger = LoggerFactory.getLogger(TagItApp.class);
+
     private static ApplicationContext applicationContext;
 
     // static method to set the ApplicationContext
@@ -43,6 +52,7 @@ public class TabFactory {
     }
 
     private static Tab loadTab(String fxmlPath, String title, String icon) {
+        System.out.println("Loading: " + fxmlPath);
         try {
             FXMLLoader loader = new FXMLLoader(TabFactory.class.getResource(fxmlPath));
             loader.setControllerFactory(applicationContext::getBean);
@@ -55,10 +65,12 @@ public class TabFactory {
             Label iconLabel = new Label(icon);
             iconLabel.setStyle("-fx-font-size: 14;");
             Label titleLabel = new Label(title);
+            titleLabel.setStyle("-fx-text-fill: Black;");
             tabHeader.getChildren().addAll(iconLabel, titleLabel); //, separator);
             
-            Tab tab = new Tab(title, content);
+            Tab tab = new Tab();
             tab.setGraphic(tabHeader);
+            tab.setContent(content);
             tab.setStyle("-fx-padding: 8 16;");
             
             // #TODO: wire controller with DI if needed (controller available via loader.getController())
@@ -67,6 +79,8 @@ public class TabFactory {
             Tab tab = new Tab(title);
             tab.setContent(new Region());
             // #TODO: log error
+            logger.error("FILE NOT LOADED");
+            logger.error(e.toString());
             return tab;
         }
     }
