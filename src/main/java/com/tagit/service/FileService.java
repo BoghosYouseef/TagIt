@@ -29,7 +29,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 
-import com.tagit.AppConfig;
 import com.tagit.TagItApp;
 import com.tagit.repository.interfaces.FileRepository;
 

@@ -6,9 +6,11 @@ import com.tagit.model.FileModel;
 import com.tagit.model.TagModel;
 import com.tagit.service.TagService;
 import com.tagit.utils.ColorUtils;
+import com.tagit.utils.ViewUtils;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.event.ActionEvent;
@@ -30,6 +32,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.control.Label;
 import javafx.scene.text.Text;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -122,8 +125,8 @@ public class TagManagerTabController {
     @FXML
     private void onAddTag() {
         // #TODO: open dialog to create new tag
-        Stage tagCreatorStage =  new Stage();
-        tagCreatorStage.setTitle("Create a new tag!");
+        // Stage tagCreatorStage =  new Stage();
+        // tagCreatorStage.setTitle("Create a new tag!");
         Label onAddTagLabel = new Label("Create a new tag!");
         ColorPicker colorPicker = createColorPicker();
         Button createTagButton = new Button("Create Tag");
@@ -131,6 +134,8 @@ public class TagManagerTabController {
         VBox inputTextfieldBox = createOnTagAddInputText();
         VBox vbox = new VBox(10, onAddTagLabel,inputTextfieldBox, colorPicker, createTagButton);
         
+        Stage tagCreatorStage = ViewUtils.createBasePopupStage(vbox, "Create a new tag!", 700, 450);
+
         createTagButton.setOnAction(event -> {
             
                 Instant createdAt = Instant.now();
@@ -152,8 +157,9 @@ public class TagManagerTabController {
         });
         vbox.setStyle("-fx-padding: 100; -fx-alignment: center;");
         vbox.setAlignment(Pos.CENTER);
-        Scene tagCreatorScene = new Scene(vbox, 700, 450);
-        tagCreatorStage.setScene(tagCreatorScene);
+        // Scene tagCreatorScene = new Scene(vbox, 700, 450);
+        // tagCreatorStage.setScene(tagCreatorScene);
+        tagCreatorStage.initModality(Modality.APPLICATION_MODAL);
         tagCreatorStage.show();
     }
 
@@ -172,14 +178,21 @@ public class TagManagerTabController {
         tagNameInputTextField.setId("tagString");
         TextField tagDescriptionOptionalInputTextField = new TextField();
         tagDescriptionOptionalInputTextField.setId("tagDescriptionString");
-        VBox inputTextHBox = new VBox(tagNameInputTextField, tagDescriptionOptionalInputTextField);
+        tagDescriptionOptionalInputTextField.setStyle("-fx-padding: 40;");
+        VBox inputTextHBox = new VBox(10,tagNameInputTextField, tagDescriptionOptionalInputTextField);
         inputTextHBox.setAlignment(Pos.CENTER);
+        inputTextHBox.setMinWidth(100);
+        inputTextHBox.setMinHeight(300);
+        
         return inputTextHBox;
     }
 
     private ColorPicker createColorPicker(){
         
         final ColorPicker colorPicker = new ColorPicker();
+        colorPicker.setStyle("-fx-padding: 15;");
+        // colorPicker.setMinWidth(140);
+        colorPicker.setMinHeight(60);
         colorPicker.setOnAction(new EventHandler() {
             public void handle(Event t) {
                 Color c = colorPicker.getValue();

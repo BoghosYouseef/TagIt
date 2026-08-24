@@ -12,6 +12,7 @@ import com.tagit.service.FileService;
 import com.tagit.service.FileTagRelationshipService;
 import com.tagit.service.TagService;
 import com.tagit.utils.ColorUtils;
+import com.tagit.utils.ViewUtils;
 
 import jakarta.annotation.PostConstruct;
 
@@ -139,6 +140,7 @@ public class FilesTabController {
         addCustomHeader(sizeColumn, "Size");
 
         addCustomHeader(lastModifiedAtColumn, "LastModifiedAt");
+        // enableTextWrapping(lastModifiedAtColumn);
         enableInstantFormatting(lastModifiedAtColumn);
 
         addCustomHeader(tagsColumn, "Tags");
@@ -377,21 +379,29 @@ public class FilesTabController {
             }
         });
     }
-
+    
     private void enableInstantFormatting(TableColumn<FileModel, Instant> column) {
         final DateTimeFormatter formatter =
         DateTimeFormatter.ofPattern("MMMM dd, yyyy - HH:mm")
                         .withZone(ZoneId.systemDefault());
         column.setCellFactory(tableCell -> new TableCell<>() {
+            
+            private final Text text = new Text();
 
+            {
+                text.wrappingWidthProperty().bind(widthProperty().subtract(10));
+                setGraphic(text);
+            }
             @Override
             protected void updateItem(Instant item, boolean empty) {
                 super.updateItem(item, empty);
 
                 if (empty || item == null) {
-                    setText(null);
+                    text.setText(null);
                 } else {
-                    setText(formatter.format(item));
+                    text.setText(formatter.format(item));
+                    text.setFill(Color.WHITE);
+
                 }
             }
         });
@@ -435,7 +445,6 @@ public class FilesTabController {
     };
 
     private void showTagSelectionMenu(FileModel fileModel){
-        Stage stage = new Stage();
         Label label = new Label("Select the tags to assign to this file");
         FlowPane tagsPane = new FlowPane();
         tagsPane.setVgap(10);
@@ -443,7 +452,7 @@ public class FilesTabController {
         tagsPane.setPadding(new Insets(5, 5, 5, 5));
         HBox hboxShowingTags = new HBox(label);
         VBox containerVBox = new VBox(hboxShowingTags, tagsPane);
-        containerVBox.setStyle("-fx-background-color: #454343;");
+        
         List<TagModel> allTags = tagService.getAllTags();
         tagsPane.getChildren().addAll(
         allTags.stream()
@@ -451,8 +460,9 @@ public class FilesTabController {
            .toList()                            // 2. Collect into a list for addAll()
         );
 
-        Scene scene = new Scene(containerVBox, 400, 400);
-        stage.setScene(scene);
+        // Scene scene = new Scene(containerVBox, 400, 400);
+        Stage stage = ViewUtils.createBasePopupStage(containerVBox, null, 400   , 400);
+        // stage.setScene(scene);
         stage.show();
         
     };

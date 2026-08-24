@@ -19,7 +19,8 @@
 .tab-pane,
 .list-view,
 .table-view,
-.chart {
+.chart,
+.v-box {
     -fx-background-color: -bg-color;
     -fx-control-inner-background: -bg-color;
     -fx-text-fill: white;
