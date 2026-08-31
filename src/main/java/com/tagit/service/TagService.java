@@ -53,4 +53,8 @@ public class TagService {
         allTags.stream().forEach(tag -> logger.info(tag.getText() + "\n"));
         return allTags;
     };
+
+    public List<TagModel> findTagsMatching(String matchingString){
+         return tagRepository.findByTextContaining(matchingString);
+    }
 }

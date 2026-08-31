@@ -115,8 +115,12 @@ public class TagManagerTabController {
                 {
                     tagText.wrappingWidthProperty().bind(widthProperty().subtract(10));
                 }
-                Button tagWrapper = createTagButton(tag);
-                setGraphic(tagWrapper);
+                // Button tagWrapper = createTagButton(tag);
+                Label tagLabel = ViewUtils.createTagLabel(
+                    tag.getText(),
+                    ColorUtils.toCssColor(tag.getColorHashString())
+                );
+                setGraphic(tagLabel);
             }
         });
         addTagsToTableViewColumns();
@@ -258,7 +262,7 @@ public class TagManagerTabController {
 
     private void addTagsToTableViewColumns(){
         List<TagModel> tags = tagService.getAllTags();
-        logger.info("Adding {} files to table", tags.size());
+        logger.info("Adding {} tags to table", tags.size());
         tagCountLabel.setText(String.format("(%d tags)", tags.size()));
         tagsTable.getItems().clear();
         tagsTable.getItems().addAll(tags);

@@ -24,12 +24,16 @@ import javafx.concurrent.Task;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
+import javafx.geometry.Point2D;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableCell;
@@ -49,7 +53,9 @@ import javafx.scene.shape.Line;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
+import javafx.stage.Popup;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import javafx.collections.ObservableList;
 
 import java.io.File;
@@ -72,6 +78,9 @@ public class FilesTabController {
 
     @FXML
     private TableView<FileModel> filesTable;
+    
+    @FXML
+    private VBox searchBarVBox;
     
     @FXML
     private TextField searchBar;
@@ -128,10 +137,18 @@ public class FilesTabController {
 
     private double MINIMUM_TAB_PANE_WIDTH;
 
+    private Popup suggestionsPopup;
+    private ListView<TagModel> suggestionsList;
+
+    private Stage primaryStage;
 
     @FXML
     public void initialize() {
-        logger.info("Now in FilesTabController!!@#!");
+
+        suggestionsPopup = new Popup();
+        suggestionsList = new ListView<>();
+
+        setupSearchBarSuggestionPrediction();
 
         addCustomHeader(nameColumn, "Name");
         enableTextWrapping(nameColumn);
@@ -223,8 +240,8 @@ public class FilesTabController {
                 tagsPane.getChildren().clear();
 
                 for (TagModel tag : file.getTags()) {
-                    Button tagButton = createClickToFilterByTagLabel(file, tag);
-                    tagsPane.getChildren().add(tagButton);
+                    Label tagLabel = createClickToFilterByTagLabel(tag);
+                    tagsPane.getChildren().add(tagLabel);
                 }
 
                 setGraphic(tagsPane);
@@ -241,6 +258,7 @@ public class FilesTabController {
 
     private void showImportWindow() {
         Stage importFilesStage = new Stage();
+        this.primaryStage = importFilesStage;
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open Resource File");
         
@@ -407,32 +425,6 @@ public class FilesTabController {
         });
     }
 
-    private <T> void addTagButton(TableColumn<FileModel, T> column) {
-        column.setCellFactory(tableCell -> new TableCell<>() {
-
-            private final Text text = new Text();
-
-            {
-                text.wrappingWidthProperty().bind(widthProperty().subtract(10));
-                setGraphic(text);
-            }
-
-            @Override
-            protected void updateItem(T item, boolean empty) {
-                super.updateItem(item, empty);
-
-                if (empty || item == null) {
-                    text.setText(null);
-                    setGraphic(null);
-                } else {
-                    text.setText(item.toString());
-                    text.setFill(Color.WHITE);
-                    setGraphic(text);
-                }
-            }
-        });
-    }
-
     private MenuButton createActionMenuButtonForFileRow( Supplier<FileModel> fileSupplier){
         MenuButton menuButton = new MenuButton("");
         MenuItem addTagMenuItem = new MenuItem("add tag");
@@ -467,25 +459,48 @@ public class FilesTabController {
         
     };
 
-    private Button createClickToAddTagLabels(FileModel fileModel, TagModel tag){
-        // Label tagLabel = new Label();
-        Button tagLabelContainerButton = createTagButton(tag);
-        tagLabelContainerButton.setOnAction(
+    private Label createTagLabel(TagModel tag) {
+        String cssBackgroundColorString = ColorUtils.toCssColor(tag.getColorHashString());
+        String tagText = tag.getText();
+
+        Label tagLabel = ViewUtils.createTagLabel(
+            tagText,
+            cssBackgroundColorString);
+        return tagLabel;
+    }
+
+    private Label createClickToAddTagLabels(FileModel fileModel, TagModel tag){
+
+        Label tagLabel = createTagLabel(tag);
+        tagLabel.setOnMouseClicked(
             event -> {
-            fileTagRelationshipService.addTagToFile(fileModel, tag);
+                if(!fileModel.getTags().contains(tag)){
+                    fileTagRelationshipService.addTagToFile(fileModel, tag);
+                }
+                else{
+                    String warningTitle = "Duplicate Tag!";
+                    String warningHeader = "File already contains the tag "+tag.getText();
+                    String warningBody = "You cannot add the same tag twice to the same file!";
+                    ViewUtils.showWarningMessage(
+                        warningTitle,
+                        warningHeader,
+                        warningBody
+                    );
+                }
             addFilesToTableViewColumns();
             }
         );
-        return tagLabelContainerButton;
+        return tagLabel;
     }
 
-    private Button createClickToFilterByTagLabel(FileModel fileModel, TagModel tag){
+
+
+    private Label createClickToFilterByTagLabel(TagModel tag){
         
-        Button tagLabelContainerButton = createTagButton(tag);
-        tagLabelContainerButton.setId(tag.getId().toString());
+        Label tagLabel = createTagLabel(tag);
+        tagLabel.setId(tag.getId().toString());
         
-        // logger.info("##defining tag background color##: "+"-fx-background-color: "+tag.getColorHashString().replace("0x", "#"));
-        tagLabelContainerButton.setOnAction(
+        tagLabel.setOnMouseClicked(
             event -> {
                 if(TagFilter.lookup("#"+tag.getId().toString()) == null){
                        TagFilter.getChildren().add(createClickToRemoveTagFromFilter(tag));
@@ -493,22 +508,22 @@ public class FilesTabController {
                     addFilesToTableViewColumns();
             }
         );
-        return tagLabelContainerButton;
+        return tagLabel;
     }
 
-    private Button createClickToRemoveTagFromFilter(TagModel tag){
+    private Label createClickToRemoveTagFromFilter(TagModel tag){
 
-        Button tagLabelContainerButton = createTagButton(tag);
-        tagLabelContainerButton.setId(tag.getId().toString());
+        Label tagLabel = createTagLabel(tag);
+        tagLabel.setId(tag.getId().toString());
         
         logger.info("##defining tag background color##: "+"-fx-background-color: "+tag.getColorHashString().replace("0x", "#"));
-        tagLabelContainerButton.setOnAction(
+        tagLabel.setOnMouseClicked(
             event -> {
-                    TagFilter.getChildren().remove(tagLabelContainerButton);
+                    TagFilter.getChildren().remove(tagLabel);
                     addFilesToTableViewColumns();
             }
         );
-        return tagLabelContainerButton;
+        return tagLabel;
     }
 
     private Set<Long> getFilterTagIds(){
@@ -522,13 +537,111 @@ public class FilesTabController {
         return tagIds;
     };
 
-    private Button createTagButton(TagModel tag){
-        Button tagLabelContainerButton = new Button(tag.getText());
-        String ChosenTagColor = ColorUtils.toCssColor(tag.getColorHashString());
-        String contrastingTextColor = ColorUtils.getContrastTextColor(ChosenTagColor);
-        tagLabelContainerButton.setStyle(
-            "-fx-background-color: " + ChosenTagColor + ";" +
-            "-fx-text-fill: " + contrastingTextColor + ";");
-        return tagLabelContainerButton;
+    private void setupSearchBarSuggestionPrediction(){
+
+        suggestionsList.setMaxHeight(200);
+        suggestionsList.prefWidthProperty().bind(searchBar.widthProperty());
+        suggestionsList.getStyleClass().add("suggestion-list");
+
+        suggestionsList.setCellFactory(list -> new ListCell<>() {
+            @Override
+            protected void updateItem(TagModel tag, boolean empty) {
+                super.updateItem(tag, empty);
+
+                if (empty || tag == null) {
+                    setText(null);
+                    setGraphic(null);
+                } else {
+
+                    Label tagLabel = createClickToFilterByTagLabel(tag);
+                    tagLabel.getStyleClass().add("suggestion-tag-item");
+                    setGraphic(tagLabel);
+                    // setText(tag.getText());
+                }
+            }
+        });
+
+        suggestionsList.setOnMouseClicked(event -> {
+            TagModel selectedTag =
+                    suggestionsList.getSelectionModel().getSelectedItem();
+
+            if (selectedTag != null) {
+                selectSuggestion(selectedTag);
+            }
+            logger.info("selected tag: " + selectedTag.getText());
+        });
+
+        suggestionsPopup.getContent().add(suggestionsList);
+        suggestionsPopup.setAutoHide(true);
+
+        searchBar.textProperty().addListener((observable, oldText, newText) -> {
+            logger.info("inside listener:: TEXT:  " + newText);
+            updateSuggestions(newText);
+        });
+
+        
+    }
+
+    private void selectSuggestion(TagModel selectedTag) {
+        // TODO
+        // implement textual search for file names
+        searchBar.setText("");
+        // searchBar.positionCaret(searchBar.getText().length());
+
+        if(TagFilter.lookup("#"+selectedTag.getId().toString()) == null){
+                       TagFilter.getChildren().add(createClickToRemoveTagFromFilter(selectedTag));
+                    }
+                    addFilesToTableViewColumns();
+        suggestionsPopup.hide();
+
+        // Use the complete object if needed:
+        // selectedTag.getColorHashString();
+        // selectedTag.getDescription();
+    }
+
+    // private void updateSuggestions(String text) {
+
+    //     List <TagModel> matchingTags = tagService.findTagsMatching(text);
+    //     logger.info("inside updateSuggestions:: TEXT:  ");
+    //     matchingTags.stream()
+    //                 .forEach(
+    //                     tag -> logger.info(tag.getText())
+    //                 );
+
+    //     suggestionsList.getItems().setAll(matchingTags);
+    //     // suggestionsPopup.show(searchBarVBox);
+    //     // if (matchingTags.isEmpty()) {
+    //     //     suggestionsPopup.hide();
+    //     //     return;
+    //     // }
+    // }
+    private void updateSuggestions(String text) {
+    // 1. If text is completely blank, clean up and hide right away
+        if (text == null || text.trim().isEmpty()) {
+            suggestionsPopup.hide();
+            return;
+        }
+
+        List<TagModel> matchingTags = tagService.findTagsMatching(text);
+        logger.info("inside updateSuggestions:: TEXT: " + text);
+
+        suggestionsList.getItems().setAll(matchingTags);
+
+        // 2. Hide popup if no matching tags are found
+        if (matchingTags.isEmpty()) {
+            suggestionsPopup.hide();
+            return;
+        }
+
+        // 3. Display or reposition the popup if it has items
+        Window ownerWindow = searchBar.getScene().getWindow();
+        
+        // Calculate the absolute X and Y screen position right below the searchBar node
+        Point2D absoluteCoordinates = searchBar.localToScreen(0, searchBar.getHeight());
+
+        if (ownerWindow != null && absoluteCoordinates != null) {
+            // This displays the floating popup at the exact screen location without moving layout elements
+            suggestionsPopup.show(ownerWindow, absoluteCoordinates.getX(), absoluteCoordinates.getY());
+        }
     }
 }

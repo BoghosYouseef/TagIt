@@ -56,7 +56,8 @@ public class TagModel {
         this.colorHashString = builder.colorHashString;
         this.createdAt = builder.createdAt;
     }
-    //// setters
+
+    //// setters 
     public void setId(Long id) {
         this.id = id;
     }
@@ -82,7 +83,6 @@ public class TagModel {
     }
 
     //// getters
-
     public Long getId() {
         return id;
     }

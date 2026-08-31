@@ -20,7 +20,10 @@
 .list-view,
 .table-view,
 .chart,
-.v-box {
+.v-box,
+.dialog-pane,
+.dialog-pane .header-panel,
+.dialog-pane .content.label {
     -fx-background-color: -bg-color;
     -fx-control-inner-background: -bg-color;
     -fx-text-fill: white;
@@ -79,6 +82,23 @@
 .column-header {
     -fx-min-width: 400px;
 }
+
+/* Style the individual cells inside the list */
+.suggestion-tag-item {
+    /* FORCE JavaFX to paint the row using your lighter calculation */
+    -fx-control-inner-background: derive(-primary-color, 10%);
+    
+    /* Ensure alternate/odd row striping doesn't mess up your single shade */
+    -fx-control-inner-background-alt: derive(-primary-color, 10%);
+    
+    /* Remove the default cell padding/borders that can mask colors */
+    -fx-background-color: -fx-control-inner-background;
+}
+
+/* Optional: Make it even lighter when hovering over a cell 
+.suggestion-tag-item:hover {
+    -fx-background-color: derive(var(-primary-color), 20%);
+}*/
 
 /* .table-view:focused > .virtual-flow > .clipped-container > .sheet > .table-row-cell:filled:selected {
   -fx-background: -fx-selection-bar;

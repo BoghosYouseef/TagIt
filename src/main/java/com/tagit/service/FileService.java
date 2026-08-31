@@ -103,13 +103,13 @@ public class FileService {
         // List<FileModel> files = fileRepository.findAllWithTags();
         List<FileModel> files = fileRepository.findFilesWithAllTags(tagIds, tagIds.size());
 
-        logger.info("Repository returned {}", files.size());
-        files.stream().forEach(file -> {
-            logger.info("FILE: " + file.getName() + " has the following tags:");
-            file.getTags().forEach(tag -> 
-                logger.info("tag: " + tag.getText())
-            );
-        });
+        // logger.info("Repository returned {}", files.size());
+        // files.stream().forEach(file -> {
+        //     // logger.info("FILE: " + file.getName() + " has the following tags:");
+        //     file.getTags().forEach(tag -> 
+        //         // logger.info("tag: " + tag.getText())
+        //     );
+        // });
         return files;
     }
 
