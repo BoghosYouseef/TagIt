@@ -1,6 +1,9 @@
-package com.tagit.model;
+package com.tagit.file.domain;
 
 import jakarta.persistence.Id;
+
+import com.tagit.tag.TagModel;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import jakarta.persistence.ManyToOne;

@@ -2,7 +2,7 @@ package com.tagit.ui;
 
 import java.util.List;
 
-import com.tagit.model.TagModel;
+import com.tagit.tag.TagModel;
 
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;

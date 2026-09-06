@@ -1,7 +1,7 @@
-package com.tagit.repository.interfaces;
+package com.tagit.file;
 
-import com.tagit.model.FileModel;
-import com.tagit.model.TagModel;
+import com.tagit.file.domain.FileModel;
+import com.tagit.tag.TagModel;
 
 import java.time.Instant;
 import java.util.List;

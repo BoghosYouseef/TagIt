@@ -1,4 +1,4 @@
-package com.tagit.service;
+package com.tagit.file;
 
 import java.util.List;
 import java.util.Locale;
@@ -30,11 +30,9 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 
 import com.tagit.TagItApp;
-import com.tagit.repository.interfaces.FileRepository;
+import com.tagit.file.domain.FileModel;
 
 import jakarta.annotation.PostConstruct;
-
-import com.tagit.model.FileModel;
 
 @Service
 public class FileService {

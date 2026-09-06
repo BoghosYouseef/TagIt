@@ -1,4 +1,4 @@
-package com.tagit.service;
+package com.tagit.file;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,9 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.tagit.TagItApp;
-import com.tagit.model.FileModel;
-import com.tagit.model.TagModel;
-import com.tagit.repository.interfaces.FileTagRepository;
+import com.tagit.file.domain.FileModel;
+import com.tagit.tag.TagModel;
 
 @Service
 public class FileTagRelationshipService {

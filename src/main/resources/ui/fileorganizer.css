@@ -144,3 +144,72 @@ button #importButton {
 .tag-button-display:disabled {
     -fx-opacity: 1.0;
 }
+
+/* ==========================================================================
+   Custom Flat ColorPicker Styling
+   ========================================================================== */
+
+/* 1. Main Control Setup */
+.color-picker {
+    -fx-pref-height: 40px;
+    -fx-min-height: 40px;
+    -fx-max-height: 40px;
+    -fx-padding: 0px;
+    -fx-focus-traversable: false;
+    
+    /* Subtle White Border Configuration */
+    -fx-border-color: rgba(255, 255, 255, 0.4); /* Pure white with 40% opacity so it's elegant */
+    -fx-border-width: 1px;
+    -fx-border-radius: 4px;                      /* Matches your Java-configured radius */
+}
+
+/* 2. Inner Layout Label Container */
+.color-picker > .color-picker-label {
+    -fx-padding: 0 8px 0 8px;
+    -fx-alignment: CENTER;
+    -fx-background-color: transparent;
+}
+
+/* 3. Centralized Text Label Settings */
+.color-picker > .color-picker-label > .label {
+    -fx-padding: 0;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-alignment: CENTER;
+}
+
+/* 4. Permanent Destruction of the Color Swatch Square & Ring */
+.color-picker > .color-picker-label > .picker-color,
+.color-picker > .color-picker-label > .picker-color > .picker-color-rect {
+    /* Tell the layout manager to completely ignore this node's space */
+    -fx-managed: false;
+    -fx-visible: false;
+    -fx-opacity: 0;
+    
+    /* Strict sizing overrides to prevent sudden resizing pops */
+    -fx-min-width: 0;   -fx-pref-width: 0;   -fx-max-width: 0;
+    -fx-min-height: 0;  -fx-pref-height: 0;  -fx-max-height: 0;
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+    -fx-stroke: null;
+    -fx-fill: null;
+}
+
+/* 5. Complete Removal of the Dropdown Arrow Button */
+.color-picker > .arrow-button {
+    -fx-padding: 0;
+    -fx-min-width: 0;   -fx-pref-width: 0;   -fx-max-width: 0;
+}
+.color-picker > .arrow-button > .arrow {
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+    -fx-shape: null;
+}
+
+/* 6. Selection & Focus Resets */
+.color-picker:focused,
+.color-picker:focused > .color-picker-label {
+    -fx-background-color: transparent; 
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+}

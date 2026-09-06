@@ -10,7 +10,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.geometry.Insets?>
 
-<BorderPane fx:id="FilesRootPane" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.tagit.ui.FilesTabController">
+<BorderPane fx:id="FilesRootPane" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.tagit.file.FilesTabController">
     <top>
         <BorderPane>
             <left>

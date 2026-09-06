@@ -1,12 +1,12 @@
-package com.tagit.ui;
+package com.tagit.tag;
 
 import com.tagit.AppConfig;
 import com.tagit.TagItApp;
-import com.tagit.model.FileModel;
-import com.tagit.model.TagModel;
-import com.tagit.service.TagService;
+import com.tagit.exception.DuplicateTagException;
+import com.tagit.exception.TagPersistenceException;
+import com.tagit.file.domain.FileModel;
+import com.tagit.ui.ViewUtils;
 import com.tagit.utils.ColorUtils;
-import com.tagit.utils.ViewUtils;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -18,6 +18,7 @@ import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ColorPicker;
@@ -25,6 +26,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
@@ -37,6 +39,7 @@ import javafx.stage.Stage;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 
+import java.sql.SQLException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -128,17 +131,20 @@ public class TagManagerTabController {
 
     @FXML
     private void onAddTag() {
-        // #TODO: open dialog to create new tag
-        // Stage tagCreatorStage =  new Stage();
-        // tagCreatorStage.setTitle("Create a new tag!");
+
         Label onAddTagLabel = new Label("Create a new tag!");
+
         ColorPicker colorPicker = createColorPicker();
         Button createTagButton = new Button("Create Tag");
         createTagButton.setPadding(new Insets(40));
         VBox inputTextfieldBox = createOnTagAddInputText();
-        VBox vbox = new VBox(10, onAddTagLabel,inputTextfieldBox, colorPicker, createTagButton);
+        VBox vbox = new VBox(10, onAddTagLabel, inputTextfieldBox, colorPicker, createTagButton);
         
-        Stage tagCreatorStage = ViewUtils.createBasePopupStage(vbox, "Create a new tag!", 700, 450);
+        Stage tagCreatorStage = ViewUtils.createBasePopupStage(
+            vbox,
+            "Create a new tag!",
+            350, 
+            450);
 
         createTagButton.setOnAction(event -> {
             
@@ -155,10 +161,27 @@ public class TagManagerTabController {
                 };
                 String tagColor = colorPicker.getValue().toString();
                 logger.info("[TagManagerTabController.onAddTag] createdAt: " + createdAt);
-                tagService.saveToDataBase(tagName, tagDescription, tagColor, createdAt);
-                addTagsToTableViewColumns();
-                tagCreatorStage.close();
-        });
+                try {
+                    tagService.saveToDataBase(tagName, tagDescription, tagColor, createdAt);
+                    
+                    addTagsToTableViewColumns();
+                    tagCreatorStage.close();
+                } catch (DuplicateTagException e) {
+                    logger.warn("Duplicate tag attempted: {}", e.getMessage());
+                    
+                    String errorMessageTitle = "Could not create tag";
+                    String errorMessageBody = "The tag text and color combination already exist!";
+                    ViewUtils.showError(
+                        errorMessageTitle,
+                        errorMessageBody);
+                    
+
+                } catch (TagPersistenceException e) {
+                    logger.error("Could not save tag", e);
+
+
+                }
+            });
         vbox.setStyle("-fx-padding: 100; -fx-alignment: center;");
         vbox.setAlignment(Pos.CENTER);
         // Scene tagCreatorScene = new Scene(vbox, 700, 450);
@@ -178,12 +201,22 @@ public class TagManagerTabController {
     }
 
     private VBox createOnTagAddInputText(){
+        Label tagNameInputTextFieldLabel = new Label("Tag text");
         TextField tagNameInputTextField = new TextField();
         tagNameInputTextField.setId("tagString");
-        TextField tagDescriptionOptionalInputTextField = new TextField();
+        
+        Label tagDescriptionOptionalInputTextFieldLabel = new Label("Tag Description (optional)");
+        TextArea tagDescriptionOptionalInputTextField = new TextArea();
+        tagDescriptionOptionalInputTextField.setWrapText(true);
         tagDescriptionOptionalInputTextField.setId("tagDescriptionString");
-        tagDescriptionOptionalInputTextField.setStyle("-fx-padding: 40;");
-        VBox inputTextHBox = new VBox(10,tagNameInputTextField, tagDescriptionOptionalInputTextField);
+        // tagDescriptionOptionalInputTextField.setStyle("-fx-padding: 0;");
+        
+        VBox inputTextHBox = new VBox(10,
+            tagNameInputTextFieldLabel,
+            tagNameInputTextField,
+            tagDescriptionOptionalInputTextFieldLabel,
+            tagDescriptionOptionalInputTextField);
+
         inputTextHBox.setAlignment(Pos.CENTER);
         inputTextHBox.setMinWidth(100);
         inputTextHBox.setMinHeight(300);
@@ -191,18 +224,63 @@ public class TagManagerTabController {
         return inputTextHBox;
     }
 
-    private ColorPicker createColorPicker(){
-        
+    private ColorPicker createColorPicker() {
         final ColorPicker colorPicker = new ColorPicker();
-        colorPicker.setStyle("-fx-padding: 15;");
-        // colorPicker.setMinWidth(140);
-        colorPicker.setMinHeight(60);
-        colorPicker.setOnAction(new EventHandler() {
-            public void handle(Event t) {
-                Color c = colorPicker.getValue();
+        
+        // Set your strict heights programmatically
+        colorPicker.setMinHeight(40);
+        colorPicker.setPrefHeight(40);
+        colorPicker.setMaxHeight(40);
+
+        // Apply the initial background color right when it's created
+        updateColorPickerAppearance(colorPicker, colorPicker.getValue());
+
+        // Use a clean lambda expression to update the UI and handle your logic whenever a color is chosen
+        colorPicker.setOnAction(event -> {
+            Color chosenColor = colorPicker.getValue();
+            
+            // 1. Run the appearance updater code
+            updateColorPickerAppearance(colorPicker, chosenColor);
+            
+            // 2. Your original code or future custom event logic goes here:
+            System.out.println("User selected color: " + chosenColor); 
+        });
+
+        return colorPicker;
+    }
+
+    /**
+     * Helper method to dynamically change the ColorPicker background 
+     * and automatically flip the text color for contrast readability.
+     */
+    private void updateColorPickerAppearance(ColorPicker picker, Color color) {
+        if (color == null) return;
+
+        // Convert JavaFX Color to a standard hex string (RRGGBB)
+        String hex = String.format("%02X%02X%02X", 
+            (int)(color.getRed() * 255),
+            (int)(color.getGreen() * 255),
+            (int)(color.getBlue() * 255));
+        
+        // Automatically swap text color based on background brightness (Black text for light colors, White for dark)
+        String textColor = ColorUtils.getContrastTextColor(hex);
+        
+        // Apply inline structural styles to the button background
+        // Force background-insets to 0 to prevent internal focus rings from offsetting
+        picker.setStyle(
+            "-fx-background-color: #" + hex + ";" +
+            "-fx-background-insets: 0;" + 
+            "-fx-background-radius: 4px;" // Optional: adds a slight modern rounded edge
+        );
+        
+        // Apply text color directly to the label node inside the picker
+        // We wrap this in a Platform.runLater to ensure the internal skin graph has rendered on creation
+        javafx.application.Platform.runLater(() -> {
+            var labelNode = picker.lookup(".label");
+            if (labelNode != null) {
+                labelNode.setStyle("-fx-text-fill: " + textColor + ";");
             }
         });
-        return colorPicker;
     }
 
     private void addCustomHeader(TableColumn<?, ?> column, String text) {
@@ -272,20 +350,8 @@ public class TagManagerTabController {
         logger.warn("Setting file-column minimum widths to: " + minimumWidth);
         for (TableColumn<?, ?> column : tagsTable.getColumns()) {
             if (column.getStyleClass().contains("file-column")) { // Check for the CSS class
-                column.setMinWidth(minimumWidth); // Set your desired minimum width
+                column.setMinWidth(200); // Set your desired minimum width
             }
         }
-    }
-
-    private Button createTagButton(TagModel tag){
-        Button tagLabelContainerButton = new Button(tag.getText());
-        tagLabelContainerButton.getStyleClass().add("tag-button-display");
-        tagLabelContainerButton.setDisable(true);
-        String ChosenTagColor = ColorUtils.toCssColor(tag.getColorHashString());
-        String contrastingTextColor = ColorUtils.getContrastTextColor(ChosenTagColor);
-        tagLabelContainerButton.setStyle(
-            "-fx-background-color: " + ChosenTagColor + ";" +
-            "-fx-text-fill: " + contrastingTextColor + ";");
-        return tagLabelContainerButton;
     }
 }

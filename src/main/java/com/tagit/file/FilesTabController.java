@@ -1,4 +1,4 @@
-package com.tagit.ui;
+package com.tagit.file;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -8,17 +8,15 @@ import org.springframework.stereotype.Controller;
 
 import com.tagit.AppConfig;
 import com.tagit.TagItApp;
-import com.tagit.service.FileService;
-import com.tagit.service.FileTagRelationshipService;
-import com.tagit.service.TagService;
+import com.tagit.file.domain.FileModel;
+import com.tagit.file.domain.FileTag;
 import com.tagit.utils.ColorUtils;
-import com.tagit.utils.ViewUtils;
 
 import jakarta.annotation.PostConstruct;
 
-import com.tagit.model.FileModel;
-import com.tagit.model.FileTag;
-import com.tagit.model.TagModel;
+import com.tagit.tag.TagModel;
+import com.tagit.tag.TagService;
+import com.tagit.ui.ViewUtils;
 
 import javafx.concurrent.Task;
 import javafx.event.EventHandler;
@@ -432,6 +430,12 @@ public class FilesTabController {
             FileModel fileModel = fileSupplier.get();
             showTagSelectionMenu(fileModel);
         });
+
+        MenuItem openFileLocationMenuItem = new MenuItem("Open File Location");
+        openFileLocationMenuItem.setOnAction(event -> {
+            FileModel fileModel = fileSupplier.get();
+            showTagSelectionMenu(fileModel);
+        });
         menuButton.getItems().add(addTagMenuItem);
         return menuButton;
     };
@@ -476,14 +480,18 @@ public class FilesTabController {
             event -> {
                 if(!fileModel.getTags().contains(tag)){
                     fileTagRelationshipService.addTagToFile(fileModel, tag);
+                    String confirmationTitle = "Tag added!";
+                    String confirmationBody = "Tag added to file successfully! File now contains the tag "+tag.getText();
+                    ViewUtils.showSuccess(
+                        confirmationTitle,
+                        confirmationBody
+                    );
                 }
                 else{
                     String warningTitle = "Duplicate Tag!";
-                    String warningHeader = "File already contains the tag "+tag.getText();
-                    String warningBody = "You cannot add the same tag twice to the same file!";
-                    ViewUtils.showWarningMessage(
+                    String warningBody = "File already contains the tag "+tag.getText() + "You cannot add the same tag twice to the same file!";
+                    ViewUtils.showWarning(
                         warningTitle,
-                        warningHeader,
                         warningBody
                     );
                 }
@@ -599,22 +607,6 @@ public class FilesTabController {
         // selectedTag.getDescription();
     }
 
-    // private void updateSuggestions(String text) {
-
-    //     List <TagModel> matchingTags = tagService.findTagsMatching(text);
-    //     logger.info("inside updateSuggestions:: TEXT:  ");
-    //     matchingTags.stream()
-    //                 .forEach(
-    //                     tag -> logger.info(tag.getText())
-    //                 );
-
-    //     suggestionsList.getItems().setAll(matchingTags);
-    //     // suggestionsPopup.show(searchBarVBox);
-    //     // if (matchingTags.isEmpty()) {
-    //     //     suggestionsPopup.hide();
-    //     //     return;
-    //     // }
-    // }
     private void updateSuggestions(String text) {
     // 1. If text is completely blank, clean up and hide right away
         if (text == null || text.trim().isEmpty()) {

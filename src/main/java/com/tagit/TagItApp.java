@@ -21,8 +21,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import com.tagit.db.DBInitializationScript;
 
 @SpringBootApplication
-@EnableJpaRepositories(basePackages = "com.tagit.repository")
-@EntityScan("com.tagit.model")
+@EnableJpaRepositories(basePackages = "com.tagit")
+@EntityScan("com.tagit")
 @EnableConfigurationProperties(AppConfig.class)
 @DependsOnDatabaseInitialization
 public class TagItApp {    

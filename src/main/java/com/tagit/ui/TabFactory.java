@@ -43,9 +43,9 @@ public class TabFactory {
         tabPane.setStyle("-fx-font-size: 12;");
 
         List<Tab> tabs = new ArrayList<>();
-        tabs.add(loadTab("/ui/files-tab.fxml", "Files", "📁"));
+        tabs.add(loadTab("/ui/file/files-tab.fxml", "Files", "📁"));
         tabs.add(loadTab("/ui/statistics-tab.fxml", "Statistics", "📊"));
-        tabs.add(loadTab("/ui/tags-tab.fxml", "Manage Tags", "🏷️"));
+        tabs.add(loadTab("/ui/tag/tags-tab.fxml", "Manage Tags", "🏷️"));
 
         tabPane.getTabs().addAll(tabs);
         return tabPane;

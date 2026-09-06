@@ -1,11 +1,11 @@
-package com.tagit.repository.interfaces;
+package com.tagit.file;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.NoRepositoryBean;
 
-import com.tagit.model.FileModel;
-import com.tagit.model.FileTag;
-import com.tagit.model.TagModel;
+import com.tagit.file.domain.FileModel;
+import com.tagit.file.domain.FileTag;
+import com.tagit.tag.TagModel;
 
 @NoRepositoryBean
 interface BaseFileTagRepository <T extends FileTag, ID> extends JpaRepository<T, ID> {

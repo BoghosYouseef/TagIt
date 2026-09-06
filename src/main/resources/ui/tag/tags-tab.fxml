@@ -7,7 +7,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.geometry.Insets?>
 
-<BorderPane xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.tagit.ui.TagManagerTabController">
+<BorderPane xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.tagit.tag.TagManagerTabController">
     <top>
         <BorderPane>
             <left>

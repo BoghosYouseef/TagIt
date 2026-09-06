@@ -1,4 +1,4 @@
-package com.tagit.repository.interfaces;
+package com.tagit.file;
 
 import java.util.List;
 import java.util.Set;
@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.NoRepositoryBean;
 import org.springframework.data.repository.query.Param;
 
-import com.tagit.model.FileModel;
+import com.tagit.file.domain.FileModel;
 
 @NoRepositoryBean
 interface BaseFileRepository <T extends FileModel, ID> extends JpaRepository<T, ID> {

@@ -1,4 +1,4 @@
-package com.tagit.model;
+package com.tagit.file.domain;
 
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -15,6 +15,8 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import com.tagit.tag.TagModel;
 
 
 @Entity

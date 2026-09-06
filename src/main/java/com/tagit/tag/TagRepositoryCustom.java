@@ -1,12 +1,11 @@
-package com.tagit.repository.interfaces;
+package com.tagit.tag;
 
+import java.sql.SQLException;
 import java.time.Instant;
-
-import com.tagit.model.TagModel;
 
 
 public interface TagRepositoryCustom {
-    TagModel saveTagModelRecord(
+    TagModel saveTagModelRecord (
                 String text,
                 String description,
                 String colorHashString,

@@ -43,7 +43,7 @@ public class TagItGUI extends Application {
 
 
         Scene scene = new Scene(root, config.getWindow().getWidth(), config.getWindow().getHeight());
-        scene.getRoot().setStyle("-fx-background-color: -bg-color;");
+        
 
         // Load UI stylesheet (theme can be provided via DI later)
         scene.getStylesheets().add(getClass().getResource("/ui/fileorganizer.css").toExternalForm());

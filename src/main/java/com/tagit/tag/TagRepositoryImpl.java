@@ -1,13 +1,10 @@
-package com.tagit.repository.implementation;
+package com.tagit.tag;
 
 import java.time.Instant;
 
 import org.springframework.stereotype.Repository;
 
-import com.tagit.model.FileModel;
-import com.tagit.model.TagModel;
-import com.tagit.repository.interfaces.TagRepository;
-import com.tagit.repository.interfaces.TagRepositoryCustom;
+import com.tagit.file.domain.FileModel;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

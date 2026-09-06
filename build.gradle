@@ -15,7 +15,9 @@ group = 'com.tagit'
 version = '0.0.1-SNAPSHOT'
 
 java {
-    sourceCompatibility = '21'
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 repositories {
@@ -25,9 +27,9 @@ repositories {
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.openjfx:javafx-controls:21.0.2'
-    implementation 'org.openjfx:javafx-fxml:21.0.2'
-    implementation 'org.openjfx:javafx-graphics:21.0.2'
+    implementation 'org.openjfx:javafx-controls:21.0.7'
+    implementation 'org.openjfx:javafx-fxml:21.0.7'
+    implementation 'org.openjfx:javafx-graphics:21.0.7'
     implementation 'org.xerial:sqlite-jdbc:3.51.1.0'
     implementation 'org.hibernate.orm:hibernate-community-dialects'
     implementation 'org.flywaydb:flyway-core:11.19.0'
@@ -46,24 +48,26 @@ tasks.named('test') {
     systemProperty "spring.profiles.active", "test" // Set the active profile for tests
     testLogging {
         // set options for log level LIFECYCLE
-        events TestLogEvent.FAILED,
+        events( TestLogEvent.FAILED,
             TestLogEvent.PASSED,
             TestLogEvent.SKIPPED,
             TestLogEvent.STANDARD_OUT
-        exceptionFormat TestExceptionFormat.FULL
-        showExceptions true
-        showCauses true
-        showStackTraces true
+        )
+        exceptionFormat = TestExceptionFormat.FULL
+        showExceptions = true
+        showCauses = true
+        showStackTraces = true
 
         // set options for log level DEBUG and INFO
         debug {
-            events TestLogEvent.STARTED,
+            events( TestLogEvent.STARTED,
                 TestLogEvent.FAILED,
                 TestLogEvent.PASSED,
                 TestLogEvent.SKIPPED,
                 TestLogEvent.STANDARD_ERROR,
                 TestLogEvent.STANDARD_OUT
-            exceptionFormat TestExceptionFormat.FULL
+            )
+            exceptionFormat = TestExceptionFormat.FULL
         }
         info.events = debug.events
         info.exceptionFormat = debug.exceptionFormat
@@ -85,7 +89,7 @@ tasks.named('build') {
 
 
 javafx {
-    version = "21.0.2"
+    version = "21.0.7"
     modules = [ 'javafx.controls', 'javafx.fxml', 'javafx.graphics' ]
 }
 
