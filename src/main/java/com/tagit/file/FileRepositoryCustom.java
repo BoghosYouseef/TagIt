@@ -3,6 +3,7 @@ package com.tagit.file;
 import com.tagit.file.domain.FileModel;
 import com.tagit.tag.TagModel;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -12,7 +13,7 @@ public interface FileRepositoryCustom {
     FileModel saveFileRecord(
                 String name,
                 String size,
-                String absolutePath,
+                Path absolutePath,
                 String fileType,
                 String fileExtension,
                 Instant fileDateLastModifeiString);

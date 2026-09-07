@@ -3,6 +3,7 @@ package com.tagit.file.domain;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Temporal;
@@ -11,11 +12,13 @@ import jakarta.persistence.TemporalType;
 import jakarta.persistence.GeneratedValue;  
 import jakarta.persistence.GenerationType;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.tagit.file.PathConverter;
 import com.tagit.tag.TagModel;
 
 
@@ -33,8 +36,9 @@ public class FileModel {
     @Column
     private String size;
 
+    @Convert(converter = PathConverter.class)
     @Column(name = "absolute_path")
-    private String absolutePath;
+    private Path absolutePath;
 
     @Column(name = "file_type")
     private String type; // e.g., "text", "image"
@@ -57,7 +61,7 @@ public class FileModel {
     public FileModel(
         String name,
         String size,
-        String absolutePath,
+        Path absolutePath,
         String fileType,
         String fileExtension,
         Instant lastModifiedAt) {
@@ -83,7 +87,7 @@ public class FileModel {
         return size;
     }
 
-    public String getAbsolutePath() {
+    public Path getAbsolutePath() {
         return absolutePath;
     }
 
@@ -117,7 +121,7 @@ public class FileModel {
         this.size = size;
     }
 
-    public void setAbsolutePath(String absolutePath) {
+    public void setAbsolutePath(Path absolutePath) {
         this.absolutePath = absolutePath;
     }
 

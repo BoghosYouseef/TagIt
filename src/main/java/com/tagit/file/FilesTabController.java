@@ -1,32 +1,24 @@
 package com.tagit.file;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.SpringApplication;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.stereotype.Controller;
 
 import com.tagit.AppConfig;
 import com.tagit.TagItApp;
 import com.tagit.file.domain.FileModel;
-import com.tagit.file.domain.FileTag;
 import com.tagit.utils.ColorUtils;
 
-import jakarta.annotation.PostConstruct;
 
 import com.tagit.tag.TagModel;
 import com.tagit.tag.TagService;
 import com.tagit.ui.ViewUtils;
 
 import javafx.concurrent.Task;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.Label;
@@ -38,30 +30,23 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.input.DragEvent;
 import javafx.scene.input.TransferMode;
-import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Line;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
 import javafx.stage.Window;
-import javafx.collections.ObservableList;
 
 import java.io.File;
-import java.sql.DriverManager;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -116,9 +101,6 @@ public class FilesTabController {
     @FXML
     private Button importButton;
 
-
-    // @Autowired
-    // private ApplicationContext applicationContext;
     @Autowired
     AppConfig appConfig;
 
@@ -137,8 +119,6 @@ public class FilesTabController {
 
     private Popup suggestionsPopup;
     private ListView<TagModel> suggestionsList;
-
-    private Stage primaryStage;
 
     @FXML
     public void initialize() {
@@ -198,9 +178,9 @@ public class FilesTabController {
         actionsColumn.getStyleClass().add("file-column");
         actionsColumn.setCellFactory(column -> new TableCell<>() {
 
-        private final MenuButton menuButton = createActionMenuButtonForFileRow(
-            () ->  getTableView().getItems().get(getIndex())
-        );
+            private final MenuButton menuButton = createActionMenuButtonForFileRow(
+                () ->  getTableView().getItems().get(getIndex())
+            );
 
             {
                 menuButton.setOnShowing(event -> {
@@ -256,7 +236,6 @@ public class FilesTabController {
 
     private void showImportWindow() {
         Stage importFilesStage = new Stage();
-        this.primaryStage = importFilesStage;
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open Resource File");
         
@@ -327,11 +306,6 @@ public class FilesTabController {
             Set<Long> tagIds = getFilterTagIds();
             addTagFilteredFilesToTableViewColumns(tagIds);
         }
-        // List<FileModel> files = fileService.retrieveAllFilesAsObjects();
-        // logger.info("Adding {} files to table", files.size());
-        // fileCountLabel.setText(String.format("(%d files)", files.size()));
-        // filesTable.getItems().clear();
-        // filesTable.getItems().addAll(files);
     }
 
     private void addAllFilesToTableViewColumns(){
@@ -364,10 +338,9 @@ public class FilesTabController {
         HBox header = new HBox();
         Label label = new Label(text);
         
-        // header.setPadding(new Insets(0, 0, 0, 10));
         header.getChildren().add(label);
         header.setAlignment(javafx.geometry.Pos.CENTER);
-        column.setGraphic(header); // set the custom header
+        column.setGraphic(header);
     }
 
     private <T> void enableTextWrapping(TableColumn<FileModel, T> column) {
@@ -434,9 +407,9 @@ public class FilesTabController {
         MenuItem openFileLocationMenuItem = new MenuItem("Open File Location");
         openFileLocationMenuItem.setOnAction(event -> {
             FileModel fileModel = fileSupplier.get();
-            showTagSelectionMenu(fileModel);
+            fileService.openAndSelectFile(fileModel.getAbsolutePath());
         });
-        menuButton.getItems().add(addTagMenuItem);
+        menuButton.getItems().addAll(addTagMenuItem, openFileLocationMenuItem);
         return menuButton;
     };
 
@@ -456,9 +429,7 @@ public class FilesTabController {
            .toList()                            // 2. Collect into a list for addAll()
         );
 
-        // Scene scene = new Scene(containerVBox, 400, 400);
         Stage stage = ViewUtils.createBasePopupStage(containerVBox, null, 400   , 400);
-        // stage.setScene(scene);
         stage.show();
         
     };
@@ -601,10 +572,6 @@ public class FilesTabController {
                     }
                     addFilesToTableViewColumns();
         suggestionsPopup.hide();
-
-        // Use the complete object if needed:
-        // selectedTag.getColorHashString();
-        // selectedTag.getDescription();
     }
 
     private void updateSuggestions(String text) {

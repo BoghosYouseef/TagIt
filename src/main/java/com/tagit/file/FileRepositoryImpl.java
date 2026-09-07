@@ -11,6 +11,7 @@ import com.tagit.tag.TagModel;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.EntityManager;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -47,7 +48,7 @@ public class FileRepositoryImpl implements FileRepositoryCustom {
     public FileModel saveFileRecord(
         String name,
         String size,
-        String absolutePath,
+        Path absolutePath,
         String fileType,
         String fileExtension,
         Instant lastModifiedAt) {
