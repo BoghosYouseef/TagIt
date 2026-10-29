@@ -1,20 +1,17 @@
-package com.tagit.file;
+package com.tagit.file.repository;
 
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.tagit.file.domain.FileModel;
-import com.tagit.tag.TagModel;
 
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.EntityManager;
 
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.List;
-import java.util.Set;
+
 
 @Repository
 public class FileRepositoryImpl implements FileRepositoryCustom {

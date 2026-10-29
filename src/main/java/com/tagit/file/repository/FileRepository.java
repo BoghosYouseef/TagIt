@@ -1,4 +1,4 @@
-package com.tagit.file;
+package com.tagit.file.repository;
 
 import java.util.List;
 import java.util.Set;

@@ -1,7 +1,6 @@
-package com.tagit.file;
+package com.tagit.file.service;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 
 import java.io.File;
@@ -11,47 +10,53 @@ import java.nio.file.Paths;
 
 
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
+
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
+
 import org.springframework.stereotype.Service;
 
 import com.tagit.TagItApp;
+import com.tagit.file.FileMetaDataUtils;
 import com.tagit.file.domain.FileModel;
 import com.tagit.file.explorer.FileExplorerFactory;
+import com.tagit.file.repository.FileRepository;
+import com.tagit.tagging.service.AutoTagService;
 
 
 @Service
 public class FileService {
     private static final Logger logger = LoggerFactory.getLogger(TagItApp.class);
     
-    @Autowired
+    
     private FileRepository fileRepository;
+    private AutoTagService autoTagService;
     
-    @Autowired
-    private ApplicationContext applicationContext;
     
-    public FileService(){
+    public FileService(
+        FileRepository fileRepository,
+        AutoTagService autoTagService
+    ){
+        this.fileRepository = fileRepository;
+        this.autoTagService = autoTagService;
         logger.info("FileService initialized");
     }
     
     public void extractInfoAndSaveToDataBase(File fileToHandle) {
 
-        logger.info("File imported: " + fileToHandle.toString());
-        
-        String fileTypeString = getFileType(fileToHandle);
-        String fileExtensionString = getFileExtensionInLowerCase(fileToHandle.getName());
-        String fileNameString = getFileName(fileToHandle);
-        String fileSizeString = getFileSize(fileToHandle);
+        // logger.info("File imported: " + fileToHandle.toString());
         
         long fileLastModifiedAtAsLong = fileToHandle.lastModified(); // Returns a primitive long
+        Path fileAbsPathString = fileToHandle.toPath();
+        String fileNameString = fileToHandle.getName();
+
+        String fileTypeString = getFileType(fileToHandle);
+        String fileSizeString = FileMetaDataUtils.formatSize(fileToHandle.length());
+        String fileExtensionString = FileMetaDataUtils.getExtensionOf(fileNameString);
+        
         Instant fileLastModifiedAtInstant = Instant.ofEpochMilli(fileLastModifiedAtAsLong); 
 
-        Path fileAbsPathString = getFileAbsolutePathAsPathObject(fileToHandle);
         FileModel fileModel = fileRepository.saveFileRecord(
                                             fileNameString,
                                                 fileSizeString,
@@ -59,7 +64,9 @@ public class FileService {
                                                 fileTypeString,
                                                 fileExtensionString,
                                             fileLastModifiedAtInstant);            
-        logger.info("File saved: " + fileModel.getName());
+        // logger.info("File saved: " + fileModel.getName());
+
+        autoTagService.applyPossibleTags(fileModel);
     }
 
     public void extractInfoAndSaveToDataBase(List <File> filesToHandle) {
@@ -76,7 +83,7 @@ public class FileService {
 
         List<FileModel> files = fileRepository.findAll();
 
-        logger.info("Repository returned {}", files.size());
+        // logger.info("Repository returned {}", files.size());
         return files;
     }
 
@@ -98,13 +105,13 @@ public class FileService {
 
     
     private String getFileType(File file){
-        logger.info("Determining file type for: " + file.getAbsolutePath());
+        // logger.info("Determining file type for: " + file.getAbsolutePath());
         String fileAbsPath = file.getAbsolutePath();
         Path path = Paths.get(fileAbsPath);
         String rawFileType = "unkown/unkown";
         try {
             String fileType = Files.probeContentType(path);
-            logger.info("file Type: " + fileType);
+            // logger.info("file Type: " + fileType);
             if(fileType != null){
                 rawFileType = fileType;
             }
@@ -115,52 +122,5 @@ public class FileService {
         String regex = "[/]";
         String[] fileType = rawFileType.split(regex);
         return fileType[0];
-    }
-    
-
-    private String getFileExtensionInLowerCase(String fileName) {
-        int lastDot = fileName.lastIndexOf('.');
-
-        if (lastDot <= 0 || lastDot == fileName.length() - 1) {
-            return null;
-        }
-
-        return fileName.substring(lastDot + 1).toLowerCase(Locale.ROOT);
-    }
-
-    private String getFileName(File file) {
-        String fileName = file.getName();
-        return fileName;
-    }
-
-    private String getFileSize(File file) {
-        return convertBytesToString(file.length());
-    }
-
-    private String getFileAbsolutePathAsString(File file) {
-        String absPathAsStr = file.getAbsolutePath();
-        return absPathAsStr;
-    }
-
-    private Path getFileAbsolutePathAsPathObject(File file) {
-        Path absPathAsPathObj = Path.of(file.getAbsolutePath());
-        return absPathAsPathObj;
-    }
-
-    private String convertBytesToString(long bytes) {
-        if (bytes < 0) {
-            throw new IllegalArgumentException("Byte value cannot be negative");
-        }
-        if (bytes < 1024) {
-            return bytes + " bytes"; // Simple shortcut for small numbers
-        }
-
-        String[] units = {"bytes", "KB", "MB", "GB", "TB", "PB"};
-        
-        // Math.log calculation figures out which unit we need (KB, MB, GB, etc.)
-        int unitIndex = (int) (Math.log(bytes) / Math.log(1024));
-        double value = bytes / Math.pow(1024, unitIndex);
-
-        return String.format("%.2f %s", value, units[unitIndex]);
     }
 }

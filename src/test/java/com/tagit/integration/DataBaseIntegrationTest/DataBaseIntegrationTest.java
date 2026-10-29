@@ -80,7 +80,9 @@ public class DataBaseIntegrationTest {
         }
     }
 
+    //TODO
     private void cleanDataBase() {
+
         // Implement database cleanup logic here
     }
 

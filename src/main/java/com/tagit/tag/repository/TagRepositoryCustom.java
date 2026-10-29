@@ -1,7 +1,8 @@
-package com.tagit.tag;
+package com.tagit.tag.repository;
 
-import java.sql.SQLException;
 import java.time.Instant;
+
+import com.tagit.tag.domain.TagModel;
 
 
 public interface TagRepositoryCustom {

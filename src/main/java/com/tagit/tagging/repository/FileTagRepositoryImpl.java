@@ -1,11 +1,10 @@
-package com.tagit.file;
+package com.tagit.tagging.repository;
 
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.tagit.file.domain.FileModel;
 import com.tagit.file.domain.FileTag;
-import com.tagit.tag.TagModel;
+import com.tagit.tag.domain.TagModel;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -31,4 +30,5 @@ public class FileTagRepositoryImpl implements FileTagRepositoryCustom{
         save(fileTag);
         return fileTag;
     };
+
 }

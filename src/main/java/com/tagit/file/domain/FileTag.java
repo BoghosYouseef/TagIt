@@ -2,7 +2,7 @@ package com.tagit.file.domain;
 
 import jakarta.persistence.Id;
 
-import com.tagit.tag.TagModel;
+import com.tagit.tag.domain.TagModel;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;

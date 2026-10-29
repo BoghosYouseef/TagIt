@@ -19,7 +19,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.tagit.file.PathConverter;
-import com.tagit.tag.TagModel;
+import com.tagit.tag.domain.TagModel;
 
 
 @Entity

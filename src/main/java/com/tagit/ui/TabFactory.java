@@ -44,7 +44,7 @@ public class TabFactory {
 
         List<Tab> tabs = new ArrayList<>();
         tabs.add(loadTab("/ui/file/files-tab.fxml", "Files", "📁"));
-        tabs.add(loadTab("/ui/statistics-tab.fxml", "Statistics", "📊"));
+        tabs.add(loadTab("/ui/analytics/analytics-tab.fxml", "Analytics", "📊"));
         tabs.add(loadTab("/ui/tag/tags-tab.fxml", "Manage Tags", "🏷️"));
 
         tabPane.getTabs().addAll(tabs);
@@ -81,6 +81,11 @@ public class TabFactory {
             // #TODO: log error
             logger.error("FILE NOT LOADED");
             logger.error(e.toString());
+            if (e.getCause() != null) {
+                e.getCause().printStackTrace(); 
+            } else {
+                e.printStackTrace();
+            }
             return tab;
         }
     }

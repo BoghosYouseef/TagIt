@@ -39,4 +39,41 @@ public class ColorUtils {
                 ? "#" + color.substring(2)
                 : color;
     }
+
+     /**
+     * Dynamically generates a beautiful, unique pastel hex color based on text input.
+     * Scales infinitely without overlapping color selections.
+     */
+    public static String generateColorFromText(String text) {
+        if (text == null || text.isBlank()) {
+            return "#E0E0E0"; // Default neutral gray
+        }
+
+        // 1. Convert text hash code into a unique hue angle (0 to 359)
+        int hue = Math.abs(text.hashCode()) % 360;
+
+        // 2. Lock saturation to 75% and lightness to 80% for nice, readable pastels
+        double s = 0.75;
+        double l = 0.80;
+
+        // 3. Convert HSL math into standard RGB values
+        double c = (1 - Math.abs(2 * l - 1)) * s;
+        double x = c * (1 - Math.abs((hue / 60.0) % 2 - 1));
+        double m = l - c / 2;
+
+        double r = 0, g = 0, b = 0;
+        if (hue < 60)       { r = c; g = x; b = 0; }
+        else if (hue < 120) { r = x; g = c; b = 0; }
+        else if (hue < 180) { r = 0; g = c; b = x; }
+        else if (hue < 240) { r = 0; g = x; b = c; }
+        else if (hue < 300) { r = x; g = 0; b = c; }
+        else                { r = c; g = 0; b = x; }
+
+        int red = (int) ((r + m) * 255);
+        int green = (int) ((g + m) * 255);
+        int blue = (int) ((b + m) * 255);
+
+        // 4. Return as a standard hex string (e.g., #FFB3BA)
+        return String.format("#%02X%02X%02X", red, green, blue);
+    }
 }

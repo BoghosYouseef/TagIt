@@ -16,14 +16,17 @@
 }
 
 /* Shared surface defaults */
+
 .tab-pane,
 .list-view,
 .table-view,
 .chart,
-.v-box,
+.v-box, .h-box,
 .dialog-pane,
 .dialog-pane .header-panel,
-.dialog-pane .content.label {
+.dialog-pane .content.label,
+.analytics-legend, .analytics-legend-title,
+.chart-legend-item  {
     -fx-background-color: -bg-color;
     -fx-control-inner-background: -bg-color;
     -fx-text-fill: white;
@@ -60,7 +63,7 @@
     -fx-background-color: transparent;
     -fx-alignment: CENTER;
     /* -fx-border-color: rgba(139,90,139,0.12); */
-
+    -fx-content-display: center;
 }
 .list-cell:selected,
 .table-row-cell:selected,
@@ -120,7 +123,6 @@
     -fx-margin: 0px 2px 0px 0px;
     -fx-border-color:-bg-color;
 }
-
 
 .label { -fx-text-fill: white; }
 .label-muted { -fx-text-fill: -muted-color; }

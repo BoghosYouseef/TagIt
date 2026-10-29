@@ -1,4 +1,4 @@
-package com.tagit.tag;
+package com.tagit.tag.domain;
 
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;

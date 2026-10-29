@@ -3,18 +3,30 @@
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.geometry.Insets?>
 
-<BorderPane xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.tagit.tag.TagManagerTabController">
+<BorderPane xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.tagit.tag.controller.TagManagerTabController">
     <top>
         <BorderPane>
             <left>
                 <VBox style="-fx-padding: 16; -fx-border-color: #f8f7f8ca; -fx-border-width: 0 0 1 0; -fx-background-color: -bg-color;">
                     <Label text="Create, edit, and organize your tags" style="-fx-font-size: 12; -fx-text-fill: #a0a0a0; -fx-padding: 4 0 0 0;" />
+                    <Label fx:id="tagCountLabel" text="" style="-fx-font-size: 14; -fx-text-fill: #a0a0a0;" />
+
                 </VBox>
             </left>
+            <center>
+                <VBox fx:id="searchBarVBox" alignment="CENTER">
+                    <BorderPane.margin>
+                        <Insets topRightBottomLeft="10"/>
+                    </BorderPane.margin>
+                    <TextField fx:id="searchBar" editable="true" style="-fx-padding:20; -fx-background-radius: 15; -fx-border-radius: 15;">
+                    </TextField>
+                </VBox>
+            </center>
             <right>
                 <VBox style="-fx-padding: 10; -fx-alignment:center;" >
                     <Button fx:id="createTagButton" text="+ Add a new tag!" onAction="#onAddTag" />
@@ -23,13 +35,13 @@
         </BorderPane>
     </top>
     <center>
-        <VBox>
+        <!-- <VBox> -->
         <!-- <VBox>
             <ListView fx:id="tagsList" style="-fx-background-color: -bg-color; -fx-text-fill: white; -fx-padding: 16; -fx-border-color: transparent;" />
         </VBox> -->
-            <VBox>
+            <!-- <VBox>
                 <Label fx:id="tagCountLabel" text="" style="-fx-font-size: 14; -fx-text-fill: #a0a0a0;" />
-            </VBox>
+            </VBox> -->
             <TableView 
                 fx:id="tagsTable"
                 maxWidth="Infinity"
@@ -41,8 +53,9 @@
                     <TableColumn fx:id="tagColumn" styleClass="file-column" />
                     <TableColumn fx:id="descriptionColumn" styleClass="file-column" />
                     <TableColumn fx:id="createdAtColumn" styleClass="file-column" />
+                    <TableColumn fx:id="actionsColumn" styleClass="file-column" />
                 </columns>       
             </TableView>  
-        </VBox>  
+        <!-- </VBox>   -->
     </center>
 </BorderPane>

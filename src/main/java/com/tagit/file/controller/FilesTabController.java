@@ -1,17 +1,37 @@
-package com.tagit.file;
+package com.tagit.file.controller;
 
+import java.io.File;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Supplier;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Controller;
 
 import com.tagit.AppConfig;
 import com.tagit.TagItApp;
 import com.tagit.file.domain.FileModel;
-import com.tagit.utils.ColorUtils;
-
-
-import com.tagit.tag.TagModel;
-import com.tagit.tag.TagService;
+import com.tagit.file.service.FileService;
+import com.tagit.tag.domain.TagModel;
+import com.tagit.tag.event.ExistingTagDeletedEvent;
+import com.tagit.tag.event.ExistingTagModifiedEvent;
+import com.tagit.tag.service.TagService;
+import com.tagit.tagging.service.FileTagRelationshipService;
 import com.tagit.ui.ViewUtils;
+import com.tagit.utils.ColorUtils;
 
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -19,14 +39,15 @@ import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.control.MenuButton;
-import javafx.scene.control.MenuItem;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.MenuButton;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.Pagination;
 import javafx.scene.control.ProgressIndicator;
-import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -43,57 +64,25 @@ import javafx.stage.Popup;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 
-import java.io.File;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Supplier;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 @Controller
 public class FilesTabController {
     private static final Logger logger = LoggerFactory.getLogger(TagItApp.class);
 
-    @FXML
-    private TableView<FileModel> filesTable;
+    // @FXML
+    // private TableView<FileModel> filesTable;
     
-    @FXML
-    private VBox searchBarVBox;
     
     @FXML
     private TextField searchBar;
     
     @FXML
-    private FlowPane TagFilter;
+    private FlowPane tagFilter;
 
     @FXML
     private Label fileCountLabel;
 
-    @FXML
-    private TableColumn<FileModel, String> nameColumn;
-
-    @FXML
-    private TableColumn<FileModel, String> typeColumn;
-
-    @FXML
-    private TableColumn<FileModel, String> sizeColumn;
-
-    @FXML   
-    private TableColumn<FileModel, Instant> lastModifiedAtColumn;
-
-    @FXML
-    private TableColumn<FileModel, Set<TagModel>> tagsColumn;
-
-    @FXML
-    private TableColumn<FileModel, String> locationColumn;
-
-    @FXML
-    private TableColumn<FileModel, Void> actionsColumn;
+    @FXML 
+    private Pagination pagination;
 
     @FXML
     private BorderPane FilesRootPane;  
@@ -119,6 +108,8 @@ public class FilesTabController {
 
     private Popup suggestionsPopup;
     private ListView<TagModel> suggestionsList;
+    private List<FileModel> filesList;
+    private int rowsPerPage;
 
     @FXML
     public void initialize() {
@@ -126,107 +117,21 @@ public class FilesTabController {
         suggestionsPopup = new Popup();
         suggestionsList = new ListView<>();
 
+        rowsPerPage = 10;
         setupSearchBarSuggestionPrediction();
 
-        addCustomHeader(nameColumn, "Name");
-        enableTextWrapping(nameColumn);
+        
 
-        addCustomHeader(typeColumn, "Type");
-        addCustomHeader(sizeColumn, "Size");
+        
 
-        addCustomHeader(lastModifiedAtColumn, "LastModifiedAt");
-        // enableTextWrapping(lastModifiedAtColumn);
-        enableInstantFormatting(lastModifiedAtColumn);
+        filesList = getFilesBasedOnFilters();
+        // Pagination pagination = new Pagination((files.size() / rowsPerPage + 1), 0);
+        pagination.setPageFactory(this::createPage);
 
-        addCustomHeader(tagsColumn, "Tags");
+        refreshFilesTable();
 
-        addCustomHeader(locationColumn, "Location");
-        enableTextWrapping(locationColumn);
-
-        // the following allow values to populate columns from the model instant with same property
-        nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
-        typeColumn.setCellValueFactory(new PropertyValueFactory<>("type"));
-        sizeColumn.setCellValueFactory(new PropertyValueFactory<>("size"));
-        tagsColumn.setCellValueFactory(new PropertyValueFactory<>("tags"));
-        lastModifiedAtColumn.setCellValueFactory(new PropertyValueFactory<>("lastModifiedAt"));
-        locationColumn.setCellValueFactory(new PropertyValueFactory<>("absolutePath"));
-
-        this.MINIMUM_TAB_PANE_WIDTH = appConfig.getMinimumTabPaneWidth();
-        setColumnMinimumWidths(this.MINIMUM_TAB_PANE_WIDTH);
-        filesTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-
-
-        filesTable.setOnDragOver(
-            (event) -> {
-                if (event.getDragboard().hasFiles()) {
-                    event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
-                }
-                event.consume();
-            }
-        );
-
-        filesTable.setOnDragDropped(
-            (event) -> {
-                event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
-                List<File> droppedFiles = event.getDragboard().getFiles();
-                logger.info("Files dropped: " + droppedFiles.toString());
-                importAndHandleFiles(droppedFiles);
-                event.consume();
-            }
-        );
-
-        actionsColumn.getStyleClass().add("file-column");
-        actionsColumn.setCellFactory(column -> new TableCell<>() {
-
-            private final MenuButton menuButton = createActionMenuButtonForFileRow(
-                () ->  getTableView().getItems().get(getIndex())
-            );
-
-            {
-                menuButton.setOnShowing(event -> {
-                    FileModel file = getTableView().getItems().get(getIndex());
-                    logger.info("you have selected: " + file.getName());
-                    // Do something with file
-                    
-                });
-            }
-
-            @Override
-            protected void updateItem(Void item, boolean empty) {
-                super.updateItem(item, empty);
-                setGraphic(empty ? null : menuButton);
-            }
-        });
-
-        tagsColumn.setCellFactory(column -> new TableCell<>() {
-
-            private final FlowPane tagsPane = new FlowPane(5, 5);
-
-            @Override
-            protected void updateItem(Set<TagModel> tags, boolean empty) {
-                super.updateItem(tags, empty);
-
-                if (empty) {
-                    setGraphic(null);
-                    return;
-                }
-
-                FileModel file = getTableView()
-                        .getItems()
-                        .get(getIndex());
-
-                tagsPane.getChildren().clear();
-
-                for (TagModel tag : file.getTags()) {
-                    Label tagLabel = createClickToFilterByTagLabel(tag);
-                    tagsPane.getChildren().add(tagLabel);
-                }
-
-                setGraphic(tagsPane);
-            }
-    });
-
-        addFilesToTableViewColumns();
+        timeRawSqlQuery(Set.of(5L));
+        timeRawSqlQuery(Set.of(5L, 8L));
     }
     
     @FXML
@@ -291,43 +196,80 @@ public class FilesTabController {
             importFilesStage.close(); // Close upload window
             // handleUploadedFiles(filesToUpload); // Call your method with uploaded files
             fileService.extractInfoAndSaveToDataBase(filesToImport);
-            addFilesToTableViewColumns();
+            refreshFilesTable();
         });
 
         
     }
 
-    private void addFilesToTableViewColumns(){
-        logger.info("TagFilter.getChildren().size()#!@#!@:" + TagFilter.getChildren().size());
-        if(TagFilter.getChildren().size() == 0){
-            addAllFilesToTableViewColumns();
-        }
-        else{
+    private void refreshFilesTable(){
+        // 1. Get the data directly to work with
+        long start = System.nanoTime();
+        filesList = getFilesBasedOnFilters();
+        long afterQuery = System.nanoTime();
+        // 2. Update your UI components in one place
+        fileCountLabel.setText(String.format("(%d files)", filesList.size()));
+        int pageCount = (int) Math.ceil((double) filesList.size() / rowsPerPage);
+        pagination.setPageCount(Math.max(1, pageCount));
+        // pagination.setCurrentPageIndex(0); 
+        long end = System.nanoTime();
+        logger.info(
+            "Filtering query: {} ms, pagination/UI: {} ms",
+            (afterQuery - start) / 1_000_000,
+            (end - afterQuery) / 1_000_000
+        );
+    }
+
+    // private void addAllFilesToTableViewColumns(){
+    //     List<FileModel> files = fileService.retrieveAllFilesAsObjects();
+    //     logger.info("Adding {} files to table", files.size());
+    //     fileCountLabel.setText(String.format("(%d files)", files.size()));
+    //     filesTable.getItems().clear();
+    //     filesTable.getItems().addAll(files);
+    // }
+
+    // private void addTagFilteredFilesToTableViewColumns(Set<Long> tagIds){
+    //     List<FileModel> files = fileService.retrieveTagFilteredFilesAsObjects(tagIds);
+    //     logger.info("Adding {} files to table", files.size());
+    //     fileCountLabel.setText(String.format("(%d files)", files.size()));
+    //     filesTable.getItems().clear();
+    //     filesTable.getItems().addAll(files);
+    // }
+
+    private List<FileModel> getFilesBasedOnFilters() {
+        logger.info("TagFilter.getChildren().size(): " + tagFilter.getChildren().size());
+        
+        if (tagFilter.getChildren().isEmpty()) {
+            return getAllFiles();
+        } else {
             Set<Long> tagIds = getFilterTagIds();
-            addTagFilteredFilesToTableViewColumns(tagIds);
+            return getTagFilteredFiles(tagIds);
         }
     }
 
-    private void addAllFilesToTableViewColumns(){
+    private List<FileModel> getAllFiles() {
         List<FileModel> files = fileService.retrieveAllFilesAsObjects();
-        logger.info("Adding {} files to table", files.size());
-        fileCountLabel.setText(String.format("(%d files)", files.size()));
-        filesTable.getItems().clear();
-        filesTable.getItems().addAll(files);
+        logger.info("Retrieved {} total files from service", files.size());
+        return files;
     }
 
-    private void addTagFilteredFilesToTableViewColumns(Set<Long> tagIds){
+    private List<FileModel> getTagFilteredFiles(Set<Long> tagIds) {
+        long start = System.nanoTime();
         List<FileModel> files = fileService.retrieveTagFilteredFilesAsObjects(tagIds);
-        logger.info("Adding {} files to table", files.size());
-        fileCountLabel.setText(String.format("(%d files)", files.size()));
-        filesTable.getItems().clear();
-        filesTable.getItems().addAll(files);
+        long end = System.nanoTime();
+        logger.info(
+            "[getTagFilteredFiles] Filtering query: {} ms",
+            (end - start) / 1_000_000
+        );
+        logger.info("Retrieved {} filtered files from service", files.size());
+        
+        return files;
     }
 
     // Method to set minimum width for columns with a specific style class
-    private void setColumnMinimumWidths(double minimumWidth) {
+    private void setColumnMinimumWidths(TableView<FileModel> table, double minimumWidth) {
         logger.warn("Setting file-column minimum widths to: " + minimumWidth);
-        for (TableColumn<?, ?> column : filesTable.getColumns()) {
+        for (TableColumn<?, ?> column : table.getColumns()) {
             if (column.getStyleClass().contains("file-column")) { // Check for the CSS class
                 column.setMinWidth(minimumWidth); // Set your desired minimum width
             }
@@ -341,6 +283,7 @@ public class FilesTabController {
         header.getChildren().add(label);
         header.setAlignment(javafx.geometry.Pos.CENTER);
         column.setGraphic(header);
+        column.getStyleClass().add("file-column");
     }
 
     private <T> void enableTextWrapping(TableColumn<FileModel, T> column) {
@@ -466,7 +409,7 @@ public class FilesTabController {
                         warningBody
                     );
                 }
-            addFilesToTableViewColumns();
+            refreshFilesTable();
             }
         );
         return tagLabel;
@@ -481,10 +424,10 @@ public class FilesTabController {
         
         tagLabel.setOnMouseClicked(
             event -> {
-                if(TagFilter.lookup("#"+tag.getId().toString()) == null){
-                       TagFilter.getChildren().add(createClickToRemoveTagFromFilter(tag));
+                if(tagFilter.lookup("#"+tag.getId().toString()) == null){
+                       tagFilter.getChildren().add(createClickToRemoveTagFromFilter(tag));
                     }
-                    addFilesToTableViewColumns();
+                    refreshFilesTable();
             }
         );
         return tagLabel;
@@ -498,16 +441,17 @@ public class FilesTabController {
         logger.info("##defining tag background color##: "+"-fx-background-color: "+tag.getColorHashString().replace("0x", "#"));
         tagLabel.setOnMouseClicked(
             event -> {
-                    TagFilter.getChildren().remove(tagLabel);
-                    addFilesToTableViewColumns();
+                    tagFilter.getChildren().remove(tagLabel);
+                    refreshFilesTable();
             }
         );
         return tagLabel;
     }
 
+
     private Set<Long> getFilterTagIds(){
         Set<Long> tagIds = new HashSet<Long>();
-        TagFilter.getChildren()
+        tagFilter.getChildren()
                  .stream()
                  .forEach(tagButtonNode -> {
                     Long tagId = Long.parseLong(tagButtonNode.getId());
@@ -546,19 +490,38 @@ public class FilesTabController {
 
             if (selectedTag != null) {
                 selectSuggestion(selectedTag);
+                logger.info("selected tag: " + selectedTag.getText());
             }
-            logger.info("selected tag: " + selectedTag.getText());
         });
 
         suggestionsPopup.getContent().add(suggestionsList);
         suggestionsPopup.setAutoHide(true);
 
         searchBar.textProperty().addListener((observable, oldText, newText) -> {
-            logger.info("inside listener:: TEXT:  " + newText);
             updateSuggestions(newText);
         });
 
         
+    }
+
+    @EventListener 
+    private void updateShownFilesAfterTagChange(
+        ExistingTagDeletedEvent existingTagDeletedEvent){
+        Long deletedTagId = existingTagDeletedEvent.tag().getId();
+        tagFilter.getChildren().remove(tagFilter.lookup("#"+deletedTagId.toString()));
+
+        refreshFilesTable();
+    }
+
+    
+    @EventListener 
+    private void updateShownFilesAfterTagChange(
+        ExistingTagModifiedEvent existingTagModifiedEvent){
+        Long editedTagId = existingTagModifiedEvent.tag().getId();
+        tagFilter.getChildren().remove(tagFilter.lookup("#"+editedTagId.toString()));
+        TagModel tag = tagService.getTagbyId(editedTagId);
+        createClickToRemoveTagFromFilter(tag);
+        refreshFilesTable();
     }
 
     private void selectSuggestion(TagModel selectedTag) {
@@ -567,10 +530,10 @@ public class FilesTabController {
         searchBar.setText("");
         // searchBar.positionCaret(searchBar.getText().length());
 
-        if(TagFilter.lookup("#"+selectedTag.getId().toString()) == null){
-                       TagFilter.getChildren().add(createClickToRemoveTagFromFilter(selectedTag));
+        if(tagFilter.lookup("#"+selectedTag.getId().toString()) == null){
+                       tagFilter.getChildren().add(createClickToRemoveTagFromFilter(selectedTag));
                     }
-                    addFilesToTableViewColumns();
+                    refreshFilesTable();
         suggestionsPopup.hide();
     }
 
@@ -582,7 +545,7 @@ public class FilesTabController {
         }
 
         List<TagModel> matchingTags = tagService.findTagsMatching(text);
-        logger.info("inside updateSuggestions:: TEXT: " + text);
+        
 
         suggestionsList.getItems().setAll(matchingTags);
 
@@ -602,5 +565,217 @@ public class FilesTabController {
             // This displays the floating popup at the exact screen location without moving layout elements
             suggestionsPopup.show(ownerWindow, absoluteCoordinates.getX(), absoluteCoordinates.getY());
         }
+    }
+
+    private TableView <FileModel> createPage(int pageIndex) {
+        long start = System.nanoTime();
+
+        // Fast memory slicing
+        
+        int fromIndex = pageIndex * rowsPerPage;
+        int toIndex = Math.min(fromIndex + rowsPerPage, filesList.size());
+        
+        List<FileModel> pageItems = (fromIndex < filesList.size()) 
+            ? filesList.subList(fromIndex, toIndex) 
+            : Collections.emptyList();
+
+        // Fast structural creation
+        TableView<FileModel> table = new TableView<>();
+        table.setId("filesTable");
+        ViewUtils.applyStandardTableStyles(table);
+        
+        // Add columns & instantly display the 15 virtualized items
+        buildFileTableColumns(table);
+        setTableActions(table);
+        table.getItems().addAll(pageItems); 
+
+        long end = System.nanoTime();
+
+        logger.info(
+            "createPage({}) took {} ms, {} items",
+            pageIndex,
+            (end - start) / 1_000_000,
+            pageItems.size()
+        );
+        
+        return table;
+    }
+
+    private void buildFileTableColumns(TableView <FileModel> table){
+
+        TableColumn<FileModel, String> nameColumn = new TableColumn<FileModel, String>();
+        TableColumn<FileModel, String> typeColumn = new TableColumn<FileModel, String>();
+        TableColumn<FileModel, String> sizeColumn = new TableColumn<FileModel, String>();
+        TableColumn<FileModel, Instant> lastModifiedAtColumn = new TableColumn<FileModel, Instant>();
+        TableColumn<FileModel, Set<TagModel>> tagsColumn = new TableColumn<FileModel, Set<TagModel>> ();
+        TableColumn<FileModel, String> locationColumn = new TableColumn<FileModel, String>();
+        TableColumn<FileModel, Void> actionsColumn = new TableColumn<FileModel, Void>();
+
+        addCustomHeader(nameColumn, "Name");
+        enableTextWrapping(nameColumn);
+
+        addCustomHeader(typeColumn, "Type");
+        addCustomHeader(sizeColumn, "Size");
+
+        addCustomHeader(lastModifiedAtColumn, "LastModifiedAt");
+        // enableTextWrapping(lastModifiedAtColumn);
+        enableInstantFormatting(lastModifiedAtColumn);
+
+        addCustomHeader(tagsColumn, "Tags");
+
+        addCustomHeader(locationColumn, "Location");
+        enableTextWrapping(locationColumn);
+
+        // the following allow values to populate columns from the model instant with same property
+        nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
+        typeColumn.setCellValueFactory(new PropertyValueFactory<>("type"));
+        sizeColumn.setCellValueFactory(new PropertyValueFactory<>("size"));
+        tagsColumn.setCellValueFactory(new PropertyValueFactory<>("tags"));
+        lastModifiedAtColumn.setCellValueFactory(new PropertyValueFactory<>("lastModifiedAt"));
+        locationColumn.setCellValueFactory(new PropertyValueFactory<>("absolutePath"));
+
+        this.MINIMUM_TAB_PANE_WIDTH = appConfig.getMinimumTabPaneWidth();
+        setColumnMinimumWidths(table, this.MINIMUM_TAB_PANE_WIDTH);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+
+        actionsColumn.getStyleClass().add("file-column");
+        actionsColumn.setCellFactory(column -> new TableCell<>() {
+
+        private final MenuButton menuButton = createActionMenuButtonForFileRow(
+                () ->  getTableView().getItems().get(getIndex())
+            );
+
+            {
+                menuButton.setOnShowing(event -> {
+                    FileModel file = getTableView().getItems().get(getIndex());
+                    logger.info("you have selected: " + file.getName());
+                    // Do something with file
+                    
+                });
+            }
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                setGraphic(empty ? null : menuButton);
+            }
+        });
+
+        tagsColumn.setCellFactory(column -> new TableCell<>() {
+
+            private final FlowPane tagsPane = new FlowPane(5, 5);
+
+            @Override
+            protected void updateItem(Set<TagModel> tags, boolean empty) {
+                super.updateItem(tags, empty);
+
+                if (empty) {
+                    setGraphic(null);
+                    return;
+                }
+
+                FileModel file = getTableView()
+                        .getItems()
+                        .get(getIndex());
+
+                tagsPane.getChildren().clear();
+
+                for (TagModel tag : file.getTags()) {
+                    Label tagLabel = createClickToFilterByTagLabel(tag);
+                    tagsPane.getChildren().add(tagLabel);
+                }
+
+                setGraphic(tagsPane);
+            }
+        });
+
+        table.getColumns().addAll(
+            nameColumn,
+            typeColumn,
+            sizeColumn,
+            lastModifiedAtColumn,
+            tagsColumn,
+            locationColumn,
+            actionsColumn
+        );
+    }
+
+    private void setTableActions(TableView <FileModel> table){
+        
+        table.setOnDragOver(
+            (event) -> {
+                if (event.getDragboard().hasFiles()) {
+                    event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
+                }
+                event.consume();
+            }
+        );
+
+        table.setOnDragDropped(
+            (event) -> {
+                event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
+                List<File> droppedFiles = event.getDragboard().getFiles();
+                logger.info("Files dropped: " + droppedFiles.toString());
+                importAndHandleFiles(droppedFiles);
+                event.consume();
+            }
+        );
+
+    }
+
+    private void timeRawSqlQuery(Set<Long> tagIds) {
+        String placeholders = String.join(
+            ", ",
+            Collections.nCopies(tagIds.size(), "?")
+        );
+
+        String sql = """
+            SELECT f.*
+            FROM files f
+            JOIN file_tags ft
+                ON ft.file_id = f.id
+            WHERE ft.tag_id IN (%s)
+            GROUP BY f.id
+            HAVING COUNT(DISTINCT ft.tag_id) = ?
+            """.formatted(placeholders);
+
+        
+
+        try (Connection connection =
+                DriverManager.getConnection(appConfig.getJDBCUrl());
+                PreparedStatement statement =
+                connection.prepareStatement(sql)) {
+
+                int index = 1;
+                for (Long tagId : tagIds) {
+                    statement.setLong(index++, tagId);
+                }
+
+                statement.setInt(index, tagIds.size());
+
+                long start = System.nanoTime();
+
+                try (ResultSet resultSet = statement.executeQuery()) {
+
+                    long afterExecute = System.nanoTime();
+
+                    int count = 0;
+                    while (resultSet.next()) {
+                        count++;
+                    }
+
+                    long afterFetch = System.nanoTime();
+
+                    logger.info(
+                        "Raw SQL: execute={} ms, fetch={} ms, rows={}",
+                        (afterExecute - start) / 1_000_000.0,
+                        (afterFetch - afterExecute) / 1_000_000.0,
+                        count
+                    );
+                }
+
+            } catch (SQLException e) {
+                logger.error("Raw SQL test failed", e);
+            }
     }
 }

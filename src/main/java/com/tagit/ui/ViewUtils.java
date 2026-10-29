@@ -7,8 +7,12 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 public class ViewUtils {
@@ -44,6 +48,12 @@ public class ViewUtils {
         );
 
         return tagLabel;
+    }
+
+    public static Button createButtonWithTextAndColor(String text, String color){
+        Button button = new Button(text);
+        button.setStyle("-fx-background-color: " + color + ";");
+        return button;
     }
 
     /**
@@ -143,6 +153,13 @@ public class ViewUtils {
         showNotification(type, title, header, message, customGraphic);
     }
 
+    public static <T> void applyStandardTableStyles(TableView <T> table){
+        table.setMaxWidth(Double.MAX_VALUE);
+        table.setMaxHeight(Double.MAX_VALUE);
+        table.setMinWidth(600);
+        table.setPrefWidth(800);
+    }
+
     private static void showNotification(NotificationType type, String title, String header, String message, Node customGraphic) {
         Alert.AlertType alertType = mapNotificationType(type);
         Alert alert = new Alert(alertType);
@@ -170,4 +187,6 @@ public class ViewUtils {
             case SUCCESS -> Alert.AlertType.NONE;
         };
     }
+
+
 }

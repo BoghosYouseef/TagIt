@@ -1,33 +1,34 @@
-package com.tagit.tag;
+package com.tagit.tag.controller;
 
 import com.tagit.AppConfig;
 import com.tagit.TagItApp;
 import com.tagit.exception.DuplicateTagException;
 import com.tagit.exception.TagPersistenceException;
 import com.tagit.file.domain.FileModel;
+import com.tagit.tag.domain.TagModel;
+import com.tagit.tag.event.NewTagCreatedEvent;
+import com.tagit.tag.service.TagService;
 import com.tagit.ui.ViewUtils;
 import com.tagit.utils.ColorUtils;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Controller;
-import org.springframework.transaction.annotation.Transactional;
 
+import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
-import javafx.event.ActionEvent;
-import javafx.event.Event;
-import javafx.event.EventHandler;
+
 import javafx.fxml.FXML;
 import javafx.scene.Node;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
+
 import javafx.scene.control.Button;
 import javafx.scene.control.ColorPicker;
-import javafx.scene.control.ListView;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputControl;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -39,11 +40,12 @@ import javafx.stage.Stage;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 
-import java.sql.SQLException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+
+import javax.swing.text.View;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +64,10 @@ public class TagManagerTabController {
 
     @FXML
     private TableView<TagModel> tagsTable;
-    
+        
+    @FXML
+    private TextField searchBar;
+
     @FXML
     private TableColumn<TagModel, TagModel> tagColumn;
 
@@ -71,6 +76,9 @@ public class TagManagerTabController {
     
     @FXML
     private TableColumn<TagModel, Instant> createdAtColumn;
+    
+    @FXML
+    private TableColumn<TagModel, Void> actionsColumn;
     
     @FXML
     private Button createTagButton;
@@ -82,33 +90,33 @@ public class TagManagerTabController {
 
     @FXML
     public void initialize() {
-        logger.info("TABS MANAGER INITIALIZED!");
 
-        // #TODO: load tags from service
-        // #TODO: bind tags to TableView
-
+        searchBar.textProperty().addListener((observable, oldText, newText) -> {
+            addTextFilteredTagsToTableViewColumns(newText);
+        });
         addCustomHeader(tagColumn, "Tag");
         // enableTextWrapping(tagColumn);
 
         addCustomHeader(descriptionColumn, "Description");
         enableTextWrapping(descriptionColumn);
-
+        
         addCustomHeader(createdAtColumn, "Created At");
         enableInstantFormatting(createdAtColumn);
-
+        
+        addCustomHeader(actionsColumn, "Actions");
         this.MINIMUM_TAB_PANE_WIDTH = appConfig.getMinimumTabPaneWidth();
 
         setColumnMinimumWidths(this.MINIMUM_TAB_PANE_WIDTH);
         tagColumn.setCellValueFactory(cellData -> new ReadOnlyObjectWrapper<>(cellData.getValue()));
         descriptionColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
         createdAtColumn.setCellValueFactory(new PropertyValueFactory<>("createdAt"));
+        tagsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         
-
         tagColumn.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(TagModel tag, boolean empty) {
                 super.updateItem(tag, empty);
-
+                
                 if (empty) {
                     setGraphic(null);
                     return;
@@ -126,18 +134,76 @@ public class TagManagerTabController {
                 setGraphic(tagLabel);
             }
         });
-        addTagsToTableViewColumns();
-    }
+        
+        descriptionColumn.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(String description, boolean empty) {
+                super.updateItem(description, empty);
 
+                if (empty) {
+                    setGraphic(null);
+                    return;
+                }
+                Label tagDescriptionTextLabel = new Label(description);
+                setGraphic(tagDescriptionTextLabel);
+            }
+        });
+        
+        actionsColumn.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                
+                if (empty) {
+                    setGraphic(null);
+                    return;
+                }
+                TagModel tag = getTableView().getItems().get(getIndex());
+                
+                String deleteTagText = "Delete";
+                String editTagText = "Edit";
+                Button deleteTagButton = ViewUtils.createButtonWithTextAndColor(
+                    deleteTagText,
+                    "#e0344b"
+                );
+                
+                deleteTagButton.setOnAction( event -> 
+                    {
+                        deleteTag(tag);
+                    }
+                );
+                Button editTagButton = ViewUtils.createButtonWithTextAndColor(
+                    editTagText,
+                    "#e79f2b"
+                );
+                
+                editTagButton.setOnAction( event -> 
+                    {
+                        editTag(tag);
+                    }
+                );
+                
+                HBox actionButtonsContainer = new HBox(
+                    editTagButton, deleteTagButton
+                );
+                actionButtonsContainer.setAlignment(Pos.CENTER);
+                actionButtonsContainer.setSpacing(5);
+                setGraphic(actionButtonsContainer);
+            }
+        });
+        addTagsToTableViewColumns();
+        logger.info("TABS MANAGER INITIALIZED!");
+    }
+    
     @FXML
     private void onAddTag() {
-
+        
         Label onAddTagLabel = new Label("Create a new tag!");
-
+        
         ColorPicker colorPicker = createColorPicker();
         Button createTagButton = new Button("Create Tag");
         createTagButton.setPadding(new Insets(40));
-        VBox inputTextfieldBox = createOnTagAddInputText();
+        VBox inputTextfieldBox = createTagFormInputFields("","");
         VBox vbox = new VBox(10, onAddTagLabel, inputTextfieldBox, colorPicker, createTagButton);
         
         Stage tagCreatorStage = ViewUtils.createBasePopupStage(
@@ -149,21 +215,13 @@ public class TagManagerTabController {
         createTagButton.setOnAction(event -> {
             
                 Instant createdAt = Instant.now();
-                String tagName = "";
-                String tagDescription = "";
-                for(Node child: inputTextfieldBox.getChildren()){
-                    if (child instanceof TextField textField && "tagString".equals(textField.getId()))  {
-                        tagName = textField.getText();
-                    }
-                    if (child instanceof TextField textField && "tagDescriptionString".equals(textField.getId()))  {
-                        tagDescription = textField.getText();
-                    }
-                };
+                String tagName = getTextFieldValue(inputTextfieldBox, "tagString");
+                String tagDescription = getTextFieldValue(inputTextfieldBox, "tagDescriptionString");
+                logger.info("[onAddTag: description:] " + tagDescription);
                 String tagColor = colorPicker.getValue().toString();
                 logger.info("[TagManagerTabController.onAddTag] createdAt: " + createdAt);
                 try {
                     tagService.saveToDataBase(tagName, tagDescription, tagColor, createdAt);
-                    
                     addTagsToTableViewColumns();
                     tagCreatorStage.close();
                 } catch (DuplicateTagException e) {
@@ -182,31 +240,97 @@ public class TagManagerTabController {
 
                 }
             });
-        vbox.setStyle("-fx-padding: 100; -fx-alignment: center;");
-        vbox.setAlignment(Pos.CENTER);
-        // Scene tagCreatorScene = new Scene(vbox, 700, 450);
-        // tagCreatorStage.setScene(tagCreatorScene);
-        tagCreatorStage.initModality(Modality.APPLICATION_MODAL);
-        tagCreatorStage.show();
+
+        formatAndShowFormWindow(vbox, tagCreatorStage);
     }
 
-    @FXML
-    private void onDeleteTag() {
-        // #TODO: delete selected tag from database
+    private void deleteTag(TagModel tagModel) {
+        String tagText = tagModel.getText();
+        String tagColorHashString = tagModel.getColorHashString();
+        String cssTagColorHashString = ColorUtils.toCssColor(tagColorHashString);
+        tagService.deleteTag(tagText, tagColorHashString);
+        String successMessageTitle = "Tag deleted!";
+        String successMessageBody = "The following tag has been deleted!";
+        Label tagLabel = ViewUtils.createTagLabel(tagText, cssTagColorHashString);
+        addTagsToTableViewColumns();
+        ViewUtils.showSuccess(
+            successMessageTitle,
+            successMessageBody,
+            tagLabel
+        );
     }
 
-    @FXML
-    private void onEditTag() {
-        // #TODO: open dialog to edit selected tag
+    private void editTag(TagModel tagModel) {
+        
+        String existingTagText = tagModel.getText();
+        String existingTagDescription = tagModel.getDescription();
+        String existingTagColorHashString = tagModel.getColorHashString();
+        
+        Label onAddTagLabel = new Label("Edit an existing tag!");
+
+        Color existingTagColor = Color.web(tagModel.getColorHashString(),1);
+        ColorPicker colorPicker = createColorPicker(existingTagColor);
+        Button createTagButton = new Button("Save Tag");
+        createTagButton.setPadding(new Insets(40));
+        VBox inputTextfieldBox = createTagFormInputFields(tagModel.getText(),tagModel.getDescription());
+        VBox vbox = new VBox(10, onAddTagLabel, inputTextfieldBox, colorPicker, createTagButton);
+        
+
+        Stage tagCreatorStage = ViewUtils.createBasePopupStage(
+            vbox,
+            "Edit an existing tag!",
+            350, 
+            450);
+
+        createTagButton.setOnAction(event -> {
+            
+                Instant createdAt = Instant.now();
+                String tagName = getTextFieldValue(inputTextfieldBox, "tagString");
+                String tagDescription = getTextFieldValue(inputTextfieldBox, "tagDescriptionString");
+                String tagColor = colorPicker.getValue().toString();
+                logger.info("[TagManagerTabController.onAddTag] createdAt: " + createdAt);
+                try {
+                    tagService.editTag(
+                        existingTagText,
+                        existingTagDescription,
+                        existingTagColorHashString,
+                        tagName,
+                        tagDescription,
+                        tagColor
+                    );
+                    addTagsToTableViewColumns();
+                    ViewUtils.showSuccess("Tag Changed!","Tag changed successfully!");
+                    tagCreatorStage.close();
+                } catch (DuplicateTagException e) {
+                    logger.warn("Duplicate tag attempted: {}", e.getMessage());
+                    
+                    String errorMessageTitle = "Could not create tag";
+                    String errorMessageBody = "The tag text and color combination already exist!";
+                    ViewUtils.showError(
+                        errorMessageTitle,
+                        errorMessageBody);
+                    
+
+                } catch (TagPersistenceException e) {
+                    logger.error("Could not save tag", e);
+
+
+                }
+            });
+
+        formatAndShowFormWindow(vbox, tagCreatorStage);
     }
 
-    private VBox createOnTagAddInputText(){
+    private VBox createTagFormInputFields(
+        String initialName, 
+        String initialDescription
+    ){
         Label tagNameInputTextFieldLabel = new Label("Tag text");
-        TextField tagNameInputTextField = new TextField();
+        TextField tagNameInputTextField = new TextField(initialName);
         tagNameInputTextField.setId("tagString");
         
         Label tagDescriptionOptionalInputTextFieldLabel = new Label("Tag Description (optional)");
-        TextArea tagDescriptionOptionalInputTextField = new TextArea();
+        TextArea tagDescriptionOptionalInputTextField = new TextArea(initialDescription);
         tagDescriptionOptionalInputTextField.setWrapText(true);
         tagDescriptionOptionalInputTextField.setId("tagDescriptionString");
         // tagDescriptionOptionalInputTextField.setStyle("-fx-padding: 0;");
@@ -225,7 +349,13 @@ public class TagManagerTabController {
     }
 
     private ColorPicker createColorPicker() {
-        final ColorPicker colorPicker = new ColorPicker();
+        Color defaultWhite = Color.WHITE;
+        return createColorPicker(defaultWhite); 
+    }
+
+
+    private ColorPicker createColorPicker(Color initialColor) {
+        final ColorPicker colorPicker = new ColorPicker(initialColor);
         
         // Set your strict heights programmatically
         colorPicker.setMinHeight(40);
@@ -346,6 +476,32 @@ public class TagManagerTabController {
         tagsTable.getItems().addAll(tags);
     }
 
+    private void addTextFilteredTagsToTableViewColumns(String text){
+        logger.info("inside addTextFilteredTagsToTableViewColumns:: TEXT: " + text);
+        if (text == null || text.trim().isEmpty()) {
+            addTagsToTableViewColumns();
+        }
+        List<TagModel> matchingTags = tagService.findTagsMatching(text);
+        
+        tagsTable.getItems().clear();
+        tagsTable.getItems().addAll(matchingTags);
+    }
+
+    // Spring automatically calls this when TagService publishes the event
+    @EventListener
+    public void onNewTagCreated(NewTagCreatedEvent event) {
+        Platform.runLater(() -> {
+            TagModel newTag = event.tag();
+            logger.info("new tag added!: " + newTag.getText());
+            // Defensive check: only add if it's not already visually rendered
+            if (!tagsTable.getItems().contains(newTag)) {
+                tagsTable.getItems().add(newTag);
+            }
+        });
+    }
+
+
+
     private void setColumnMinimumWidths(double minimumWidth) {
         logger.warn("Setting file-column minimum widths to: " + minimumWidth);
         for (TableColumn<?, ?> column : tagsTable.getColumns()) {
@@ -353,5 +509,25 @@ public class TagManagerTabController {
                 column.setMinWidth(200); // Set your desired minimum width
             }
         }
+    }
+
+    // Helper to extract text from your VBox children loops cleanly
+    private String getTextFieldValue(VBox container, String elementId) {
+        for (Node child : container.getChildren()) {
+            if (elementId.equals(child.getId())) {
+                if (child instanceof TextInputControl textInput) {
+                    return textInput.getText();
+                }
+            }
+        }
+        return "";
+    }
+
+    // Shared method handling the stage modailty and padding settings
+    private void formatAndShowFormWindow(VBox vbox, Stage stage) {
+        vbox.setStyle("-fx-padding: 100; -fx-alignment: center;");
+        vbox.setAlignment(Pos.CENTER);
+        stage.initModality(Modality.APPLICATION_MODAL);
+        stage.show();
     }
 }
